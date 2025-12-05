@@ -62,13 +62,13 @@
 
     <h2>Products</h2>
 
-    <h2>Products</h2>
-
     {% if products %}
         <div class="product-grid">
             {% for p in products %}
                 <div class="product-card">
-                    <div class="product-name">{{ p.name }}</div>
+                    <div class="product-name">
+                        <a href="{% url 'product_detail' p.id %}">{{ p.name }}</a>
+                    </div>
                     <div class="product-price">${{ p.price }}</div>
                     <div class="product-description">{{ p.description }}</div>
 
@@ -95,6 +95,7 @@
     {% else %}
         <p>No products yet. Add some in the admin page.</p>
     {% endif %}
+
 
 
 
