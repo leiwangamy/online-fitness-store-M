@@ -1,4 +1,4 @@
-run = ["python", "manage.py", "runserver", "0.0.0.0:3000"]
+run = ["python", "manage.py", "runserver", "0.0.0.0:5000"]
 entrypoint = "manage.py"
 modules = ["python-3.10", "postgresql-16"]
 
@@ -11,19 +11,12 @@ channel = "stable-24_05"
 language = "python3"
 
 [deployment]
-run = ["python", "manage.py", "runserver", "0.0.0.0:3000"]
+run = ["python", "manage.py", "runserver", "0.0.0.0:5000"]
 deploymentTarget = "gce"
 
 [[ports]]
-localPort = 3000
-externalPort = 80
-
-[[ports]]
 localPort = 5000
-
-[[ports]]
-localPort = 44103
-externalPort = 3000
+externalPort = 80
 
 [agent]
 expertMode = true
@@ -31,6 +24,7 @@ expertMode = true
 [workflows]
 runButton = "Project"
 
+# Main button – runs the Django Server workflow
 [[workflows.workflow]]
 name = "Project"
 mode = "parallel"
@@ -40,6 +34,7 @@ author = "agent"
 task = "workflow.run"
 args = "Django Server"
 
+# Actual Django server workflow
 [[workflows.workflow]]
 name = "Django Server"
 author = "agent"
