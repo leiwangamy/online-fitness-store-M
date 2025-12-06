@@ -13,6 +13,12 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 import os
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -25,10 +31,20 @@ SECRET_KEY = 'django-insecure-4ju2n@$f9d0c=h)_g0lbb%k9&@rf(xa$d$g$&5ri$uf)*gev^4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = os.environ["REPLIT_DOMAINS"].split(',') + ['127.0.0.1', 'localhost']
-CSRF_TRUSTED_ORIGINS = [
-    "https://" + domain for domain in os.environ["REPLIT_DOMAINS"].split(',')
-]
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
+# Add Replit domains if running on Replit
+replit_domains = os.environ.get("REPLIT_DOMAINS")
+if replit_domains:
+    domain_list = replit_domains.split(",")
+    ALLOWED_HOSTS += domain_list
+
+    CSRF_TRUSTED_ORIGINS = [
+        f"https://{domain}" for domain in domain_list
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+
 
 # Application definition
 
@@ -82,10 +98,16 @@ WSGI_APPLICATION = 'django_project.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'fitness_club_db',
+        'USER': 'fitness_user',
+        'PASSWORD': 'Fitness123!',   # or your real password
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
