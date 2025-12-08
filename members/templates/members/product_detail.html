@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <title>{{ product.name }} – Online Fitness Club</title>
@@ -8,8 +8,12 @@
             font-family: Arial, sans-serif;
             margin: 20px;
         }
+        nav a {
+            margin-right: 15px;
+            font-weight: bold;
+        }
         .back-link {
-            margin-bottom: 15px;
+            margin: 15px 0;
             display: inline-block;
         }
         .product-detail {
@@ -34,36 +38,63 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
+        button {
+            padding: 8px 15px;
+            font-size: 1rem;
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
-    <a class="back-link" href="{% url 'home' %}">← Back to Products</a>
 
-    <div class="product-detail">
-        <div class="name">{{ product.name }}</div>
-        <div class="price">${{ product.price }}</div>
-        <p>{{ product.description }}</p>
+<header>
+    <h1>My Fitness Club</h1>
 
-        <div class="product-media">
-            {% for m in product.media.all %}
-                {% if m.media_type == "image" and m.image %}
-                    <img src="{{ m.image.url }}" alt="{{ m.title|default:product.name }}">
-                {% elif m.media_type == "video_file" and m.video %}
-                    <video controls>
-                        <source src="{{ m.video.url }}" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                {% elif m.media_type == "video_url" and m.video_url %}
-                    <iframe
-                        src="{{ m.video_url }}"
-                        frameborder="0"
-                        allowfullscreen>
-                    </iframe>
-                {% endif %}
-            {% empty %}
-                <p>No media available for this product yet.</p>
-            {% endfor %}
-        </div>
+    <nav>
+        <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'cart_detail' %}">Cart</a>
+        <a href="{% url 'login' %}">Member Login</a>
+        <a href="/admin/">Admin (staff only)</a>
+    </nav>
+
+    <hr>
+</header>
+
+<a class="back-link" href="{% url 'home' %}">← Back to Products</a>
+
+<div class="product-detail">
+    <div class="name">{{ product.name }}</div>
+    <div class="price">${{ product.price }}</div>
+    <p>{{ product.description }}</p>
+
+    <form action="{% url 'add_to_cart' product.pk %}" method="post">
+        {% csrf_token %}
+        <button type="submit">Add to Cart</button>
+    </form>
+
+    <p><a href="{% url 'cart_detail' %}">View Cart</a></p>
+
+    <div class="product-media">
+        {% for m in product.media.all %}
+            {% if m.media_type == "image" and m.image %}
+                <img src="{{ m.image.url }}" alt="{{ m.title|default:product.name }}">
+            {% elif m.media_type == "video_file" and m.video %}
+                <video controls>
+                    <source src="{{ m.video.url }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            {% elif m.media_type == "video_url" and m.video_url %}
+                <iframe
+                    src="{{ m.video_url }}"
+                    frameborder="0"
+                    allowfullscreen>
+                </iframe>
+            {% endif %}
+        {% empty %}
+            <p>No media available for this product yet.</p>
+        {% endfor %}
     </div>
+</div>
+
 </body>
 </html>
