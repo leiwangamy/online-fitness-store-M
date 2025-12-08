@@ -75,25 +75,39 @@
     <p><a href="{% url 'cart_detail' %}">View Cart</a></p>
 
     <div class="product-media">
-        {% for m in product.media.all %}
-            {% if m.media_type == "image" and m.image %}
-                <img src="{{ m.image.url }}" alt="{{ m.title|default:product.name }}">
-            {% elif m.media_type == "video_file" and m.video %}
-                <video controls>
-                    <source src="{{ m.video.url }}" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
-            {% elif m.media_type == "video_url" and m.video_url %}
-                <iframe
-                    src="{{ m.video_url }}"
-                    frameborder="0"
-                    allowfullscreen>
-                </iframe>
-            {% endif %}
-        {% empty %}
+    {% with images=product.images.all videos=product.videos.all %}
+        {% if images or videos %}
+
+            {# --- Product images --- #}
+            {% for img in images %}
+                {% if img.image %}
+                    <img src="{{ img.image.url }}"
+                         alt="{{ img.alt_text|default:product.name }}">
+                {% endif %}
+            {% endfor %}
+
+            {# --- Product videos --- #}
+            {% for vid in videos %}
+                {% if vid.video_file %}
+                    <video controls>
+                        <source src="{{ vid.video_file.url }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                {% elif vid.video_url %}
+                    <iframe
+                        src="{{ vid.video_url }}"
+                        frameborder="0"
+                        allowfullscreen>
+                    </iframe>
+                {% endif %}
+            {% endfor %}
+
+        {% else %}
             <p>No media available for this product yet.</p>
-        {% endfor %}
-    </div>
+        {% endif %}
+    {% endwith %}
+</div>
+
 </div>
 
 </body>
