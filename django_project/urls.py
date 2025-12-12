@@ -7,10 +7,10 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("payment/", include("payment.urls")),
-    path("", include("members.urls")),  # 👈 home + main site from members
     path("accounts/", include("django.contrib.auth.urls")),  # login/logout/password
-    path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("", include("members.urls")),
 ]
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

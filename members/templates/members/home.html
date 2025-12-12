@@ -111,7 +111,7 @@
             <a href="{% url 'my_orders' %}">My Orders</a>
             <a href="{% url 'my_membership' %}">My Membership</a>
         {% else %}
-            <a href="{% url 'login' %}">Member Login</a>
+            <a href="{% url 'login' %}">Login</a>
             <a href="{% url 'signup' %}">Sign Up</a>
         {% endif %}
 
@@ -119,15 +119,24 @@
     </div>
 
     <div class="account-area">
-        {% if user.is_authenticated %}
-            👤 You are logged in as <strong>{{ user.username }}</strong>.
-            <a href="{% url 'logout' %}">Logout</a>
-        {% else %}
-            👤 <a href="{% url 'login' %}">Login</a>
-            or
-            <a href="{% url 'signup' %}">Sign Up</a>.
-        {% endif %}
-    </div>
+  {% if user.is_authenticated %}
+    👤 You are logged in as <strong>{{ user.username }}</strong>.
+
+    <form action="{% url 'logout' %}" method="post" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" style="background:none;border:none;color:blue;cursor:pointer;padding:0;">
+        Logout
+      </button>
+    </form>
+
+  {% else %}
+    👤 <a href="{% url 'login' %}">Login</a>
+    or
+    <a href="{% url 'signup' %}
+">Sign Up</a>.
+  {% endif %}
+</div>
+
 </nav>
 
 

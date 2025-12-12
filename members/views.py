@@ -5,11 +5,12 @@ from django.core.paginator import Paginator
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.utils import timezone
+from django.urls import reverse
 
 from .models import Product, Category, Order, MemberProfile
 
+from datetime import timedelta
 
 
 def product_list(request):
@@ -257,24 +258,47 @@ def my_order_detail(request, pk):
 
 @login_required
 def my_membership(request):
-    profile, created = MemberProfile.objects.get_or_create(user=request.user)
+    profile, _ = MemberProfile.objects.get_or_create(user=request.user)
 
-    if request.method == "POST" and "cancel_membership" in request.POST:
-        # User cancels membership
-        profile.is_member = False
-        profile.membership_level = "none"
-        profile.membership_expires = timezone.now()
-        profile.save()
-        messages.success(request, "Your membership has been cancelled.")
-        return redirect("my_membership")
+    if request.method == "POST":
 
-    context = {
-        "profile": profile,
-        # You can adjust these prices anytime:
-        "basic_price": 39,    # $39/month for facility only
-        "premium_price": 79,  # $79/month for facility + classes
-    }
+        # --- Resume subscription (turn auto renew ON) ---
+        if "resume_membership" in request.POST and profile.is_active_member:
+            profile.auto_renew = True
+            if profile.membership_expires:
+                profile.next_billing_date = (profile.membership_expires + timedelta(days=1)).date()
+            profile.save()
+            return redirect("my_membership")
+
+        # --- Cancel subscription (turn auto renew OFF, keep access until expiry) ---
+        if "cancel_membership" in request.POST and profile.is_active_member:
+            profile.auto_renew = False
+            profile.next_billing_date = None
+            profile.save()
+            return redirect("my_membership")
+
+        # --- Subscribe / switch plan ---
+        if "subscribe_basic" in request.POST:
+            profile.start_monthly_membership(level="basic")
+            return redirect("my_membership")
+
+        if "subscribe_premium" in request.POST:
+            profile.start_monthly_membership(level="premium")
+            return redirect("my_membership")
+
+        if "switch_to_basic" in request.POST and profile.is_active_member:
+            profile.membership_level = "basic"
+            profile.save()
+            return redirect("my_membership")
+
+        if "switch_to_premium" in request.POST and profile.is_active_member:
+            profile.membership_level = "premium"
+            profile.save()
+            return redirect("my_membership")
+
+    context = {"profile": profile, "basic_price": 39, "premium_price": 79}
     return render(request, "members/my_membership.html", context)
+
 
 def logout_view(request):
     """
@@ -287,5 +311,7 @@ def logout_view(request):
         logout(request)
         messages.success(request, "You have been logged out.")
     return redirect("home")
+
+
 
 

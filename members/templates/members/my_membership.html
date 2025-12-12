@@ -44,25 +44,55 @@
     }
 
     .cancel-btn {
-        margin-top: 15px;
-        background: #d00000;
-        color: white;
-        padding: 8px 12px;
+        background-color: #e0e0e0;
+        color: #333;
+        border: 1px solid #bbb;
+        padding: 8px 14px;
         border-radius: 4px;
-        border: none;
         cursor: pointer;
+        font-size: 0.9rem;
     }
 
     .cancel-btn:hover {
         background: #9d0208;
     }
+
+    .btn {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid #999;
+    cursor: pointer;
+    }
+
+    .btn-primary {
+    background: #f7f7f7;
+    }
+
+    .btn-disabled {
+    background: #e9e9e9;
+    color: #777;
+    cursor: not-allowed;
+    }
+
+    .btn-cancel {
+    background: #e0e0e0;
+    color: #444;
+    border: 1px solid #888;
+    }
+
+    .btn-cancel:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    }
+    
+    
 </style>
 
 <div class="membership-card">
     <h1>My Membership</h1>
 
     <div class="current-status">
-    {% if profile.is_active_member %}
+     {% if profile.is_active_member %}
         <p><strong>Status:</strong> Active</p>
         <p><strong>Level:</strong> {{ profile.get_membership_level_display }}</p>
 
@@ -72,15 +102,21 @@
 
         {% if profile.auto_renew %}
             <p><strong>Auto billing:</strong> ON</p>
+
             {% if profile.next_billing_date %}
                 <p><strong>Next billing date:</strong> {{ profile.next_billing_date|date:"Y-m-d" }}</p>
             {% else %}
                 <p><strong>Next billing date:</strong> To be scheduled</p>
             {% endif %}
+
             <p style="font-size: 0.9em; color: #555;">
                 This membership is set to renew automatically every month until you cancel.
                 (Billing is handled manually by staff in this demo.)
             </p>
+
+            <!-- ✅ Cancel button -->
+            
+
         {% else %}
             <p><strong>Auto billing:</strong> OFF</p>
             <p style="font-size: 0.9em; color: #555;">
@@ -94,41 +130,92 @@
     {% else %}
         <p><strong>Status:</strong> No active membership</p>
     {% endif %}
+    </div>
 </div>
+
 
 
     <h2>Membership Plans (description only for now)</h2>
 
     <div class="plans">
-        <div class="plan">
-            <h3>Facility Only</h3>
-            <p>Unlimited access to fitness facility and gym equipment.</p>
-            <p><strong>${{ basic_price }}/month</strong></p>
-            <p>Great for members who want to train independently.</p>
-        </div>
 
-        <div class="plan">
-            <h3>Facility + Classes</h3>
-            <p>Unlimited access to fitness facility + all in-class training and group lessons.</p>
-            <p><strong>${{ premium_price }}/month</strong></p>
-            <p>Best choice for members who want coached classes + open gym.</p>
-        </div>
-    </div>
+  <!-- BASIC -->
+  <div class="plan">
+    <h3>Facility Only</h3>
+    <p>Unlimited access to fitness facility and gym equipment.</p>
+    <p><strong>${{ basic_price }}/month</strong></p>
+    <p>Great for members who want to train independently.</p>
 
     {% if profile.is_active_member %}
-        <form method="post" style="margin-top: 20px;">
+        {% if profile.membership_level == "basic" %}
+            <button class="btn btn-disabled" disabled>Current Plan</button>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="switch_to_basic" class="btn btn-primary">
+                    Switch to Basic
+                </button>
+            </form>
+        {% endif %}
+    {% else %}
+        <form method="post">
             {% csrf_token %}
-            <p>You can cancel your membership at any time. Cancellation stops future access after today (no auto-billing is set up yet).</p>
-            <button type="submit" name="cancel_membership" class="cancel-btn">
-                Cancel Membership
+            <button type="submit" name="subscribe_basic" class="btn btn-primary">
+                Subscribe
             </button>
         </form>
-    {% else %}
-        <p style="margin-top: 20px;">
-            To start a membership, please contact us at the front desk or by email.
-            (Online automated payment will be added later.)
-        </p>
     {% endif %}
+  </div>
+
+  <!-- PREMIUM -->
+  <div class="plan">
+    <h3>Facility + Classes</h3>
+    <p>Unlimited access to fitness facility + all in-class training and group lessons.</p>
+    <p><strong>${{ premium_price }}/month</strong></p>
+    <p>Best choice for members who want coached classes + open gym.</p>
+
+    {% if profile.is_active_member %}
+        {% if profile.membership_level == "premium" %}
+            <button class="btn btn-disabled" disabled>Current Plan</button>
+        {% else %}
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" name="switch_to_premium" class="btn btn-primary">
+                    Switch to Premium
+                </button>
+            </form>
+        {% endif %}
+    {% else %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="subscribe_premium" class="btn btn-primary">
+                Subscribe
+            </button>
+        </form>
+    {% endif %}
+  </div>
+
 </div>
 
+
+  {% if profile.is_active_member %}
+  <form method="post" style="margin-top: 30px;">
+    {% csrf_token %}
+
+    {% if profile.auto_renew %}
+      <button type="submit" name="cancel_membership"
+              style="background:#ccc;color:#555;">
+        Cancel Subscription
+      </button>
+    {% else %}
+      <button type="submit" name="resume_membership">
+        Resume Subscription
+      </button>
+    {% endif %}
+  </form>
+{% endif %}
+
+
+
 {% endblock %}
+

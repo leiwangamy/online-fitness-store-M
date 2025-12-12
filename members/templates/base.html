@@ -56,49 +56,38 @@
 <body>
 
 <nav>
-    <div class="nav-links">
-        <a href="{% url 'home' %}">Home</a>
-        <a href="{% url 'cart_detail' %}">Cart</a>
+  <div class="nav-links">
+    <a href="{% url 'home' %}">Home</a>
+    <a href="{% url 'cart_detail' %}">Cart</a>
 
-        {% if user.is_authenticated %}
-            <a href="{% url 'my_orders' %}">My Orders</a>
-        {% else %}
-            <a href="{% url 'login' %}">Member Login</a>
-            <a href="{% url 'register' %}">Sign Up</a>
-        {% endif %}
-
-        {% if user.is_staff %}
-            <a href="/admin/">Admin (staff only)</a>
-        {% endif %}
-    </div>
-
-    <div class="account-area">
     {% if user.is_authenticated %}
-        <span class="user-name">
-            &#128100; {{ user.username }}
-        </span>
-
-        <form action="{% url 'logout' %}" method="post" style="display:inline;">
-            {% csrf_token %}
-            <button type="submit" class="logout-link-button">Logout</button>
-        </form>
+      <a href="{% url 'my_orders' %}">My Orders</a>
     {% else %}
-    <a href="{% url 'login' %}" class="login-link">
-        &#128100; Login
-    </a>
-    <a href="{% url 'signup' %}" class="register-link">
-        Sign Up
-    </a>
+      <a href="{% url 'login' %}">Member Login</a>
+      <a href="{% url 'register' %}">Sign Up</a>
     {% endif %}
 
-</div>
+    {% if user.is_staff %}
+      <a href="/admin/">Admin (staff only)</a>
+    {% endif %}
+  </div>
 
+  <div class="account-area">
+    {% if user.is_authenticated %}
+      <span class="user-name">&#128100; {{ user.username }}</span>
+
+      <form action="{% url 'logout' %}" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="logout-link-button">Logout</button>
+      </form>
+    {% endif %}
+  </div>
 </nav>
 
 <hr>
 
-{% block content %}
-{% endblock %}
+{% block content %}{% endblock %}
+
 
 </body>
 </html>

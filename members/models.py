@@ -280,15 +280,23 @@ class MemberProfile(models.Model):
         This does NOT charge any money, it's just for your internal logic.
         """
         now = timezone.now()
+
         self.membership_level = level          # "basic" or "premium"
         self.is_member = True
         self.membership_started = now
-        # Simple 30-day period for demo
-        self.membership_expires = now + timedelta(days=30)
+
+        # ✅ membership period
+        expiry = now + timedelta(days=30)
+        self.membership_expires = expiry
+
         self.auto_renew = True
-        self.next_billing_date = (now + timedelta(days=30)).date()
+
+        # ✅ billing happens AFTER expiry (next day)
+        self.next_billing_date = (expiry + timedelta(days=1)).date()
+
         self.last_billed_date = now.date()
         self.save()
+
 
     def simulate_monthly_billing_cycle(self):
         """
