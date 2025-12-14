@@ -130,46 +130,41 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
-        "id",
-        "user",
-        "status",
-        "shipping_carrier",   # 👈 NEW
-        "tracking_number",    # 👈 NEW
-        "total",
-        "created_at",
+        "id", "user", "status",
+        "shipping_carrier", "tracking_number",
+        "total", "created_at",
     )
-    # ID is clickable
     list_display_links = ("id",)
-
-    list_filter = ("status", "shipping_carrier", "created_at")  # 👈 added shipping_carrier
+    list_filter = ("status", "shipping_carrier", "created_at")
     date_hierarchy = "created_at"
     inlines = [OrderItemInline]
 
     readonly_fields = (
-        "subtotal",
-        "tax",
-        "shipping",
-        "total",
-        "created_at",
-        "updated_at",
+        "shipping_full",
+        "subtotal", "tax", "shipping", "total",
+        "created_at", "updated_at",
     )
 
     fieldsets = (
         ("Order Info", {
+            "fields": ("user", "status", "shipping_carrier", "tracking_number")
+        }),
+        ("Shipping Address", {
             "fields": (
-                "user",
-                "status",
-                "shipping_carrier",   # 👈 NEW
-                "tracking_number",    # 👈 NEW
-            ),
+                "ship_name", "ship_phone",
+                "ship_address1", "ship_address2",
+                "ship_city", "ship_province", "ship_postal_code", "ship_country",
+                "shipping_full",
+            )
         }),
         ("Financial Summary", {
-            "fields": ("subtotal", "tax", "shipping", "total"),
+            "fields": ("subtotal", "tax", "shipping", "total")
         }),
         ("Timestamps", {
-            "fields": ("created_at", "updated_at"),
+            "fields": ("created_at", "updated_at")
         }),
     )
+
 
 @admin.register(MemberProfile)
 class MemberProfileAdmin(admin.ModelAdmin):

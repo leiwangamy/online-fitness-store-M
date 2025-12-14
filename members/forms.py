@@ -2,7 +2,11 @@
 
 from django import forms
 from .models import Product
+from django.contrib.auth.models import User
+from .models import MemberProfile
+from django.contrib.auth import get_user_model 
 
+User = get_user_model()
 
 class ProductAdminForm(forms.ModelForm):
     """
@@ -69,4 +73,15 @@ class ProductAdminForm(forms.ModelForm):
                     )
 
         return cleaned_data
+
+
+class AccountEmailForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ("email",)
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = MemberProfile
+        fields = ("phone", "address1", "address2", "city", "province", "postal_code", "country")
 

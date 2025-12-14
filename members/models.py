@@ -4,9 +4,9 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from datetime import timedelta
 
+from datetime import timedelta
+from django.contrib.auth.models import AbstractUser
 
 # =========================
 #  CATEGORY
@@ -222,11 +222,18 @@ class MemberProfile(models.Model):
         ("premium", "Facility + unlimited in-class training"),
     ]
 
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="member_profile",
-    )
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+
+    phone = models.CharField(max_length=30, blank=True)
+    address1 = models.CharField(max_length=255, blank=True)
+    address2 = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    province = models.CharField(max_length=100, blank=True)
+    postal_code = models.CharField(max_length=20, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+
+    def __str__(self):
+        return f"Profile: {self.user.email}"
 
     membership_level = models.CharField(
         max_length=20,
@@ -325,19 +332,19 @@ class MemberProfile(models.Model):
 
 
 # ---------- signals to auto-create MemberProfile ----------
-User = get_user_model()
 
 
-@receiver(post_save, sender=User)
-def create_member_profile(sender, instance, created, **kwargs):
-    if created:
-        MemberProfile.objects.create(user=instance)
+
+#@receiver(post_save, sender=User)
+#def create_member_profile(sender, instance, created, **kwargs):
+ #   if created:
+  #      MemberProfile.objects.create(user=instance)
 
 
-@receiver(post_save, sender=User)
-def save_member_profile(sender, instance, **kwargs):
-    if hasattr(instance, "member_profile"):
-        instance.member_profile.save()
+#@receiver(post_save, sender=User)
+#def save_member_profile(sender, instance, **kwargs):
+ #   if hasattr(instance, "member_profile"):
+  #      instance.member_profile.save()
 
 
 # =========================
@@ -393,6 +400,63 @@ class Order(models.Model):
         help_text="Shipping company for physical items",
     )
 
+    # ===== Shipping address snapshot (stored on the order) =====
+    ship_name = models.CharField(max_length=200, blank=True, default="")
+    ship_phone = models.CharField(max_length=30, blank=True, default="")
+
+    ship_address1 = models.CharField(max_length=255, blank=True, default="")
+    ship_address2 = models.CharField(max_length=255, blank=True, default="")
+    ship_city = models.CharField(max_length=100, blank=True, default="")
+    ship_province = models.CharField(max_length=100, blank=True, default="")
+    ship_postal_code = models.CharField(max_length=20, blank=True, default="")
+    ship_country = models.CharField(max_length=100, blank=True, default="")
+
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    tax = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    shipping = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Order #{self.pk} ({self.user})"
+
+    def shipping_full(self):
+        """ formatted shipping block for Admin display."""
+        lines = []
+        if self.ship_name:
+            lines.append(self.ship_name)
+        if self.ship_phone:
+            lines.append(self.ship_phone)
+        if self.ship_address1:
+            lines.append(self.ship_address1)
+        if self.ship_address2:
+            lines.append(self.ship_address2)
+
+        city_line = " ".join([p for p in [self.ship_city, self.ship_province, self.ship_postal_code] if p]).strip()
+        if city_line:
+            lines.append(city_line)
+
+        if self.ship_country:
+            lines.append(self.ship_country)
+
+        return "\n".join(lines)
+
+    shipping_full.short_description = "Shipping Address"
+
+def save(self, *args, **kwargs):
+    if self.pk:
+        old = Order.objects.get(pk=self.pk)
+        if old.status in ["paid", "shipped", "delivered"]:
+            # prevent accidental overwrite
+            self.ship_address1 = old.ship_address1
+            self.ship_address2 = old.ship_address2
+            self.ship_city = old.ship_city
+            self.ship_province = old.ship_province
+            self.ship_postal_code = old.ship_postal_code
+            self.ship_country = old.ship_country
+    super().save(*args, **kwargs)
+
+
+
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
     tax = models.DecimalField(
         max_digits=10,
@@ -430,3 +494,5 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
+    
+

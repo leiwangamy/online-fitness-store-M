@@ -62,8 +62,10 @@
 
     {% if user.is_authenticated %}
       <a href="{% url 'my_orders' %}">My Orders</a>
+      <a href="{% url 'account_profile' %}">Account</a>
+
     {% else %}
-      <a href="{% url 'login' %}">Member Login</a>
+      <a href="{% url 'account_login' %}">Member Login</a>
       <a href="{% url 'register' %}">Sign Up</a>
     {% endif %}
 
@@ -75,8 +77,8 @@
   <div class="account-area">
     {% if user.is_authenticated %}
       <span class="user-name">&#128100; {{ user.username }}</span>
-
-      <form action="{% url 'logout' %}" method="post" style="display:inline;">
+      
+      <form action="{% url 'account_logout' %}" method="post" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="logout-link-button">Logout</button>
       </form>

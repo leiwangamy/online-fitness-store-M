@@ -111,8 +111,8 @@
             <a href="{% url 'my_orders' %}">My Orders</a>
             <a href="{% url 'my_membership' %}">My Membership</a>
         {% else %}
-            <a href="{% url 'login' %}">Login</a>
-            <a href="{% url 'signup' %}">Sign Up</a>
+            <a href="{% url 'account_login' %}">Login</a>
+            <a href="{% url 'account_signup' %}">Sign Up</a>
         {% endif %}
 
         <a href="/admin/">Admin (staff only)</a>
@@ -122,7 +122,7 @@
   {% if user.is_authenticated %}
     👤 You are logged in as <strong>{{ user.username }}</strong>.
 
-    <form action="{% url 'logout' %}" method="post" style="display:inline;">
+    <form action="{% url 'account_logout' %}" method="post" style="display:inline;">
       {% csrf_token %}
       <button type="submit" style="background:none;border:none;color:blue;cursor:pointer;padding:0;">
         Logout
@@ -130,10 +130,9 @@
     </form>
 
   {% else %}
-    👤 <a href="{% url 'login' %}">Login</a>
+    👤 <a href="{% url 'account_login' %}">Login</a>
     or
-    <a href="{% url 'signup' %}
-">Sign Up</a>.
+    <a href="{% url 'account_signup' %}">Sign Up</a>.
   {% endif %}
 </div>
 
@@ -153,7 +152,7 @@
         Join our membership to access classes, coaching, and exclusive discounts in our online store.
     </p>
 
-    <a href="{% url 'login' %}">
+    <a href="{% url 'account_login' %}">
         <button type="button">Member Login</button>
     </a>
 </section>

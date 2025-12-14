@@ -7,10 +7,10 @@ from django.contrib.auth import login as auth_login, logout
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.urls import reverse
-
 from .models import Product, Category, Order, MemberProfile
-
 from datetime import timedelta
+from django.contrib import messages
+from .forms import AccountEmailForm, ProfileForm
 
 
 def product_list(request):
@@ -311,6 +311,45 @@ def logout_view(request):
         logout(request)
         messages.success(request, "You have been logged out.")
     return redirect("home")
+
+
+@login_required
+def account_settings(request):
+    user = request.user
+    profile = user.profile  # thanks to related_name="profile"
+
+    if request.method == "POST":
+        email_form = AccountEmailForm(request.POST, instance=user)
+        profile_form = ProfileForm(request.POST, instance=profile)
+
+        if email_form.is_valid() and profile_form.is_valid():
+            email_form.save()
+            profile_form.save()
+            messages.success(request, "Your account info has been updated.")
+            return redirect("account_settings")
+    else:
+        email_form = AccountEmailForm(instance=user)
+        profile_form = ProfileForm(instance=profile)
+
+    return render(request, "members/account_settings.html", {
+        "email_form": email_form,
+        "profile_form": profile_form,
+    })
+
+@login_required
+def account_profile(request):
+    profile = request.user.profile  # requires OneToOne related_name="profile"
+
+    if request.method == "POST":
+        form = ProfileForm(request.POST, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated.")
+            return redirect("account_profile")
+    else:
+        form = ProfileForm(instance=profile)
+
+    return render(request, "members/account_profile.html", {"form": form})
 
 
 
