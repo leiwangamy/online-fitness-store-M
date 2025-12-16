@@ -1,0 +1,21 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    body {
+        background-color: #d8f3dc;
+    }
+</style>
+
+
+<h2>My Profile</h2>
+
+
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+
+{% endblock %}

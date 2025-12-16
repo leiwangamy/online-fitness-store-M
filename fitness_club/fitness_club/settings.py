@@ -9,7 +9,7 @@ import os
 # ------------------------------------------------------------
 # Paths
 # ------------------------------------------------------------
-BASE_DIR = Path(__file__).resolve().parent.parent  # points to /fitness_club (outer)
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # points to /fitness_club (outer) then Root
 
 # ------------------------------------------------------------
 # Core settings
@@ -92,7 +92,7 @@ ASGI_APPLICATION = "fitness_club.fitness_club.asgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],   # if you use a global /templates folder, put BASE_DIR / "templates" here
+        "DIRS": [BASE_DIR/ "templates"], # if you use a global /templates folder, put BASE_DIR / "templates" here
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -167,7 +167,11 @@ USE_TZ = True
 # ------------------------------------------------------------
 # Static / Media
 # ------------------------------------------------------------
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
@@ -193,4 +197,6 @@ else:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     ACCOUNT_EMAIL_VERIFICATION = "mandatory"
     ACCOUNT_EMAIL_REQUIRED = True
+
+
 

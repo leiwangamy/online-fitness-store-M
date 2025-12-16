@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>{% block title %}Fitness Club{% endblock %}</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+             background-color: #d8f3dc;   /* light green */
+
+        } 
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a {
+            margin-right: 15px;
+            font-weight: bold;
+        }
+     
+
+        .account-area {
+            background: #eee;
+            padding: 6px 10px;
+            border-radius: 5px;
+        }
+
+        .user-name {
+            margin-right: 10px;
+        }
+
+        .logout-link-button {
+            background: none;
+            border: none;
+            padding: 0;
+            margin: 0;
+            font: inherit;
+            color: #0000ee;          /* normal link blue */
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        .logout-link-button:hover {
+            color: #551a8b;          /* visited link purple-ish */
+        }
+
+        h1 {
+          margin-bottom: 10px;
+        }
+
+
+
+    </style>
+
+ 
+
+</head>
+
+<body>
+<nav class="top-nav">
+    <div class="nav-links">
+        <a href="{% url 'home' %}">Home</a>
+        <a href="{% url 'cart_detail' %}">Cart</a>
+
+       
+        
+        {% if user.is_authenticated %}
+            <a href="{% url 'my_orders' %}">My Orders</a>
+            <a href="{% url 'my_membership' %}">My Membership</a>
+        {% else %}
+            <a href="{% url 'account_login' %}">Login</a>
+            <a href="{% url 'account_signup' %}">Sign Up</a>
+        {% endif %}
+
+          <a href="{% url 'admin:index' %}">Admin</a>
+    </div>
+
+    <div class="account-area">
+  {% if user.is_authenticated %}
+    👤 You are logged in as <strong>{{ user.username }}</strong>.
+
+    <form action="{% url 'account_logout' %}" method="post" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" style="background:none;border:none;color:blue;cursor:pointer;padding:0;">
+        Logout
+      </button>
+    </form>
+
+  {% else %}
+    👤 <a href="{% url 'account_login' %}">Login</a>
+    or
+    <a href="{% url 'account_signup' %}">Sign Up</a>.
+  {% endif %}
+</div>
+
+</nav>
+
+
+
+<hr>
+
+
+
+{% block content %}{% endblock %}
+
+
+</body>
+</html>

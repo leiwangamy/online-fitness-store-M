@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Member Login – My Fitness Club{% endblock %}
+
+{% block extra_css %}
+
+<style>
+  .card {
+    max-width: 450px;
+    padding: 25px 30px;
+    border: 1px solid #ccc;
+    background: #fff;
+    margin: 20px auto;     /* centers the card */
+    min-height: 220px;
+    border-radius: 10px;
+  }
+
+  /* Make form fields look styled */
+  .card input[type="text"],
+  .card input[type="email"],
+  .card input[type="password"] {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 6px 0 12px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+
+  .card button[type="submit"] {
+    padding: 10px 14px;
+    border: 1px solid #333;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .card button[type="submit"]:hover {
+    background: #f2f2f2;
+  }
+
+  .helptext,
+  ul.errorlist {
+    color: #a00;
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Member Login</h1>
+
+<div class="card">
+  <form method="post" action="{% url 'account_login' %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Log in</button>
+  </form>
+
+  <p style="margin-top:15px;">
+    Don’t have an account yet?
+    <a href="{% url 'account_signup' %}">Create a new member account</a>
+  </p>
+</div>
+{% endblock %}

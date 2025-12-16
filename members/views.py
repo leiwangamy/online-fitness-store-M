@@ -22,7 +22,7 @@ def product_list(request):
     if category_slug:
         products = products.filter(category__slug=category_slug)
 
-    return render(request, "product_list.html", {
+    return render(request, "members/product_list.html", {
         "products": products,
         "categories": categories,
         "selected_category": category_slug,
@@ -186,7 +186,7 @@ def payment(request):
     cart = _get_cart(request)
 
     if not cart:
-        return render(request, "members/payment.html", {"empty": True})
+        return render(request, "payment.html", {"empty": True})
 
     items = []
     total = Decimal("0.00")
@@ -211,9 +211,9 @@ def payment(request):
     if request.method == "POST":
         # pretend payment ok, clear cart
         request.session["cart"] = {}
-        return render(request, "members/payment_success.html", {"total": total})
+        return render(request, "payment_success.html", {"total": total})
 
-    return render(request, "members/payment.html", {"items": items, "total": total})
+    return render(request, "payment.html", {"items": items, "total": total})
 
 
 def signup(request):
@@ -227,7 +227,7 @@ def signup(request):
     else:
         form = UserCreationForm()
 
-    return render(request, "registration/signup.html", {"form": form})
+    return render(request, "account/signup.html", {"form": form}) #allauth handle signup, this view is not used
 
 @login_required
 def my_orders(request):
@@ -331,7 +331,7 @@ def account_settings(request):
         email_form = AccountEmailForm(instance=user)
         profile_form = ProfileForm(instance=profile)
 
-    return render(request, "members/account_settings.html", {
+    return render(request, "account_settings.html", {
         "email_form": email_form,
         "profile_form": profile_form,
     })

@@ -1,0 +1,37 @@
+body {
+  background-color: #d8f3dc !important;
+  font-family: Arial, sans-serif !important;
+}
+
+#header {
+  background-color: #2f6f5e !important;
+}
+
+#site-name a {
+  color: white !important;
+  font-weight: bold;
+}
+
+/* Make our injected header act like a nav bar */
+.site-admin-header{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  padding:12px 20px !important;
+  background:#2f6f5e !important;
+  border-radius: 6px 6px 0 0;
+}
+
+/* Style the links */
+.site-admin-header .admin-nav-links a{
+  color:#fff !important;
+  font-weight:bold !important;
+  text-decoration:none !important;
+  margin-right:18px !important;
+  font-size: 18px;      /* try 16px, 18px, 20px */
+}
+
+.site-admin-header .admin-nav-links a:hover{
+  text-decoration:underline !important;
+}
+
