@@ -6,6 +6,13 @@
 
     <title>{% block title %}Fitness Club{% endblock %}</title>
 
+    {% block extra_css %}{% endblock %}
+   
+    <!-- Optional: global CSS -->
+  {# <link rel="stylesheet" href="{% static 'css/base.css' %}"> #}
+
+
+    
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -74,6 +81,7 @@
         {% if user.is_authenticated %}
             <a href="{% url 'my_orders' %}">My Orders</a>
             <a href="{% url 'my_membership' %}">My Membership</a>
+             <a href="{% url 'account_profile' %}">Account</a>
         {% else %}
             <a href="{% url 'account_login' %}">Login</a>
             <a href="{% url 'account_signup' %}">Sign Up</a>

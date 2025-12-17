@@ -336,21 +336,26 @@ def account_settings(request):
         "profile_form": profile_form,
     })
 
+
+
 @login_required
 def account_profile(request):
-    profile = request.user.profile  # requires OneToOne related_name="profile"
+    # If you already have a profile auto-created, use request.user.memberprofile
+    profile, _ = MemberProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
         form = ProfileForm(request.POST, instance=profile)
         if form.is_valid():
             form.save()
-            messages.success(request, "Profile updated.")
             return redirect("account_profile")
+        edit_mode = True
     else:
         form = ProfileForm(instance=profile)
+        edit_mode = request.GET.get("edit") == "1"
 
-    return render(request, "members/account_profile.html", {"form": form})
-
-
-
+    return render(request, "members/account_profile.html", {
+        "profile": profile,
+        "form": form,
+        "edit_mode": edit_mode,
+    })
 
