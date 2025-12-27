@@ -22,6 +22,7 @@ except Exception:
 from cart.models import CartItem
 from orders.models import Order, OrderItem
 from orders.services import create_downloads_and_email
+from products.inventory import adjust_inventory, log_purchase
 
 
 TAX_RATE = Decimal("0.05")          # GST 5%
@@ -211,11 +212,20 @@ def checkout(request):
                     price=Decimal(str(product.price)),  # unit price at purchase
                 )
 
-                # Inventory update (physical only)
+                # Inventory update and logging
                 is_digital = bool(getattr(product, "is_digital", False))
                 is_service = bool(getattr(product, "is_service", False))
 
                 if is_digital:
+                    # Log digital product purchase (no stock to update)
+                    log_purchase(
+                        product=product,
+                        quantity=qty,
+                        change_type="ORDER",
+                        created_by=request.user,
+                        order=order,
+                        note=f"Order #{order.id} - Digital product: {product.name} x{qty}"
+                    )
                     continue
 
                 if is_service:
@@ -226,23 +236,31 @@ def checkout(request):
                         product.refresh_from_db()
                         product.service_seats = max(0, getattr(product, "service_seats", 0) - qty)
                         product.save(update_fields=["service_seats"])
+                    # Log service purchase (no physical stock to update)
+                    log_purchase(
+                        product=product,
+                        quantity=qty,
+                        change_type="ORDER",
+                        created_by=request.user,
+                        order=order,
+                        note=f"Order #{order.id} - Service: {product.name} x{qty}"
+                    )
                     continue
 
-                # For physical products, update quantity_in_stock
-                # Use locked product if available, otherwise refresh from DB
-                if product.pk in locked_products:
-                    locked_product = locked_products[product.pk]
-                    stock = getattr(locked_product, "quantity_in_stock", None)
-                    if stock is not None:
-                        locked_product.quantity_in_stock = max(0, stock - qty)
-                        locked_product.save(update_fields=["quantity_in_stock"])
-                else:
-                    # Fallback: refresh from DB
-                    product.refresh_from_db()
-                    stock = getattr(product, "quantity_in_stock", None)
-                    if stock is not None:
-                        product.quantity_in_stock = max(0, stock - qty)
-                        product.save(update_fields=["quantity_in_stock"])
+                # For physical products, update quantity_in_stock using adjust_inventory
+                # This will update stock and create an inventory log entry
+                stock = getattr(product, "quantity_in_stock", None)
+                if stock is not None:
+                    # Use the product instance (adjust_inventory will handle the update safely)
+                    # We already checked stock availability earlier, so this should be safe
+                    adjust_inventory(
+                        product=product,
+                        delta=-qty,  # Negative to reduce stock
+                        change_type="ORDER",
+                        created_by=request.user,
+                        order=order,
+                        note=f"Order #{order.id} - {product.name} x{qty}"
+                    )
 
             # Create DigitalDownload rows + send email
             # (your service already uses get_or_create so it’s safe)

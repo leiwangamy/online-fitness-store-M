@@ -36,3 +36,12 @@ build/
 # --- Database backups ---
 backups/
 *.backup
+
+# --- Environment variables ---
+.env
+
+# --- Temporary files ---
+error.txt
+paste.txt
+*.tmp
+Untitled

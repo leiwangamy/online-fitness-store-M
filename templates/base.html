@@ -9,12 +9,10 @@
   {% block extra_css %}{% endblock %}
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    
-    body { 
-      font-family: Arial, sans-serif; 
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 15px;
       background-color: #d8f3dc;
@@ -23,146 +21,240 @@
       max-width: 100%;
       overflow-x: hidden;
     }
-    
+
     .container {
       max-width: 1400px;
       margin: 0 auto;
       padding: 0 15px;
+      position: relative;
     }
-    
-    nav { 
-      display: flex; 
-      justify-content: space-between; 
+
+    nav {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 15px;
     }
-    
+
     .nav-links {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
-    
-    nav a { 
+
+    nav a {
       font-weight: bold;
-      font-size: 15px;
+      font-size: 18px;
       text-decoration: none;
       color: #0066cc;
+      padding: 8px 12px;
     }
-    
-    nav a:hover {
-      text-decoration: underline;
-    }
-    
-    .account-area { 
-      background: #eee; 
-      padding: 8px 12px; 
+
+    nav a:hover { text-decoration: underline; }
+
+    .account-area {
+      background: #eee;
+      padding: 8px 12px;
       border-radius: 5px;
-      font-size: 14px;
+      font-size: 18px;
       flex-shrink: 0;
     }
-    
-    .logout-link-button { 
-      background:none; 
-      border:none; 
-      padding:0; 
-      margin:0; 
-      font:inherit; 
-      color:#0000ee; 
-      text-decoration:underline; 
-      cursor:pointer; 
+
+    .logout-link-button {
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: #0000ee;
+      text-decoration: underline;
+      cursor: pointer;
     }
-    
-    .logout-link-button:hover { 
-      color:#551a8b; 
+
+    .logout-link-button:hover { color: #551a8b; }
+
+    h1 { margin-bottom: 15px; font-size: 2rem; }
+    h2 { font-size: 1.5rem; margin-bottom: 15px; }
+    h3 { font-size: 1.2rem; margin-bottom: 10px; }
+
+    /* =========================
+       TOAST / ALERT MESSAGES
+       ========================= */
+    .toast-wrap {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: min(420px, calc(100vw - 36px));
     }
-    
-    h1 { 
-      margin-bottom: 15px;
-      font-size: 2rem;
+
+    .toast {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+      color: #fff;
+      border-left: 4px solid rgba(0,0,0,0.25);
+      animation: toastIn 240ms ease-out;
+      overflow: hidden;
     }
-    
-    h2 {
-      font-size: 1.5rem;
-      margin-bottom: 15px;
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-14px); }
+      to   { opacity: 1; transform: translateX(0); }
     }
-    
-    h3 {
-      font-size: 1.2rem;
-      margin-bottom: 10px;
+
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(-14px); }
     }
-    
+
+    .toast.success { background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%); }
+    .toast.info    { background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%); }
+    .toast.warning { background: linear-gradient(135deg, #f59f00 0%, #e67700 100%); }
+    .toast.error   { background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%); }
+
+    .toast-icon {
+      font-size: 18px;
+      line-height: 1;
+      margin-top: 2px;
+      flex: 0 0 auto;
+      width: 22px;
+      text-align: center;
+      opacity: 0.95;
+    }
+
+    .toast-body {
+      flex: 1 1 auto;
+      font-size: 0.95em;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .toast-close {
+      flex: 0 0 auto;
+      border: none;
+      cursor: pointer;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      color: #fff;
+      background: rgba(255,255,255,0.18);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      line-height: 0;
+      transition: background 0.15s ease;
+    }
+
+    .toast-close:hover { background: rgba(255,255,255,0.28); }
+
     /* Responsive design */
     @media (max-width: 768px) {
-      body {
-        padding: 10px;
-        font-size: 14px;
-      }
-      
-      nav {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-      
-      .nav-links {
-        width: 100%;
-        flex-direction: column;
-      }
-      
-      .account-area {
-        width: 100%;
-      }
-      
-      h1 {
-        font-size: 1.5rem;
-      }
-      
-      h2 {
-        font-size: 1.3rem;
-      }
+      body { padding: 10px; font-size: 14px; }
+
+      nav { flex-direction: column; align-items: flex-start; }
+
+      .nav-links { width: 100%; flex-direction: column; }
+
+      .account-area { width: 100%; }
+
+      h1 { font-size: 1.5rem; }
+      h2 { font-size: 1.3rem; }
+
+      .toast-wrap { top: 10px; left: 10px; max-width: calc(100vw - 20px); }
     }
   </style>
 </head>
 
 <body>
-<div class="container">
-<nav class="top-nav">
-  <div class="nav-links">
-    <a href="{% url 'home:home' %}">Home</a>
-    <a href="{% url 'cart:cart_detail' %}">Cart</a>
+  <!-- Global Toast Messages (Django messages framework) -->
+  {% if messages %}
+    <div class="toast-wrap" id="toastWrap">
+      {% for message in messages %}
+        <div class="toast {{ message.tags|default:'info' }}" role="status" aria-live="polite">
+          <div class="toast-icon">
+            {% if message.tags == 'success' %}✓
+            {% elif message.tags == 'error' %}✕
+            {% elif message.tags == 'warning' %}! 
+            {% else %}ℹ{% endif %}
+          </div>
 
-    {% if user.is_authenticated %}
-      <a href="{% url 'orders:my_orders' %}">My Orders</a>
-      <a href="{% url 'members:my_membership' %}">My Membership</a>
-      <a href="{% url 'profiles:account_profile' %}">Account</a>
-      
-    {% else %}
-      <a href="{% url 'account_login' %}">Login</a>
-      <a href="{% url 'account_signup' %}">Sign Up</a>
-    {% endif %}
+          <div class="toast-body">{{ message }}</div>
 
-    <a href="{% url 'admin:index' %}">Admin</a>
+          <button type="button" class="toast-close" aria-label="Close">×</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="container">
+    <nav class="top-nav">
+      <div class="nav-links">
+        <a href="{% url 'home:home' %}">Home</a>
+        <a href="{% url 'cart:cart_detail' %}">Cart</a>
+
+        {% if user.is_authenticated %}
+          <a href="{% url 'orders:my_orders' %}">My Orders</a>
+          <a href="{% url 'members:my_membership' %}">My Membership</a>
+          <a href="{% url 'profiles:account_profile' %}">Account</a>
+        {% else %}
+          <a href="{% url 'account_login' %}">Login</a>
+          <a href="{% url 'account_signup' %}">Sign Up</a>
+        {% endif %}
+
+        <a href="{% url 'admin:index' %}">Admin</a>
+      </div>
+
+      <div class="account-area">
+        {% if user.is_authenticated %}
+          👤 You are logged in as <strong>{{ user.username }}</strong>.
+          <form action="{% url 'accounts:account_logout' %}" method="post" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="logout-link-button">Logout</button>
+          </form>
+        {% else %}
+          👤 <a href="{% url 'account_login' %}">Login</a>
+          or <a href="{% url 'account_signup' %}">Sign Up</a>.
+        {% endif %}
+      </div>
+    </nav>
+
+    <hr>
+
+    {% block content %}{% endblock %}
   </div>
 
-  <div class="account-area">
-    {% if user.is_authenticated %}
-      👤 You are logged in as <strong>{{ user.username }}</strong>.
-      <form action="{% url 'accounts:account_logout' %}" method="post" style="display:inline;">
-        {% csrf_token %}
-        <button type="submit" class="logout-link-button">Logout</button>
-      </form>
-    {% else %}
-      👤 <a href="{% url 'account_login' %}">Login</a>
-      or <a href="{% url 'account_signup' %}">Sign Up</a>.
-    {% endif %}
-  </div>
-</nav>
+  <script>
+    // Auto-dismiss toast messages + close button
+    document.addEventListener("DOMContentLoaded", function () {
+      const wrap = document.getElementById("toastWrap");
+      if (!wrap) return;
 
-<hr>
+      function dismissToast(toast) {
+        toast.style.animation = "toastOut 220ms ease-in forwards";
+        setTimeout(() => toast.remove(), 220);
+      }
 
-{% block content %}{% endblock %}
-</div>
+      wrap.querySelectorAll(".toast").forEach((toast) => {
+        // close button
+        const btn = toast.querySelector(".toast-close");
+        if (btn) btn.addEventListener("click", () => dismissToast(toast));
+
+        // auto close after 5s
+        setTimeout(() => {
+          if (document.body.contains(toast)) dismissToast(toast);
+        }, 5000);
+      });
+    });
+
+  </script>
 </body>
 </html>

@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     "payment",
     "members",
     "accounts",
+    "core",
     "profiles.apps.ProfilesConfig",
 
 ]

@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 
 from .models import Order, OrderItem, DigitalDownload
 
+from products.inventory import adjust_inventory
 
 @login_required
 def my_order_detail(request, order_id):

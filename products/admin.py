@@ -2,7 +2,7 @@
 from django.contrib import admin
 
 from .forms import ProductAdminForm
-from .models import Category, Product, ProductAudio, ProductImage, ProductVideo
+from .models import Category, Product, ProductAudio, ProductImage, ProductVideo, InventoryLog
 
 
 class ProductImageInline(admin.TabularInline):
@@ -33,6 +33,11 @@ class ProductAdmin(admin.ModelAdmin):
     Admin for all products (physical, digital, services).
     """
     form = ProductAdminForm
+
+    csv_export_filename = "products.csv"
+    csv_export_fields = ("id", "name", "price",  "product_type","availability_display")
+    actions = ["export_as_csv"]
+    
 
     list_display = (
         "id",
@@ -93,3 +98,10 @@ class ProductAdmin(admin.ModelAdmin):
     class Media:
         js = ("js/product_admin.js",)
 
+
+@admin.register(InventoryLog)
+class InventoryLogAdmin(admin.ModelAdmin):
+    list_display = ("id", "product", "change_type", "delta", "order_id", "created_by", "created_at")
+    list_filter = ("change_type", "created_at")
+    search_fields = ("product__name", "=order_id", "note")
+    date_hierarchy = "created_at"

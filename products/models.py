@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from django.conf import settings
 
 # =========================
 #  CATEGORY
@@ -223,3 +224,24 @@ class ProductAudio(models.Model):
 
     def __str__(self) -> str:
         return f"{self.product.name} - Audio {self.title or self.id}"
+
+
+class InventoryLog(models.Model):
+    
+    class ChangeType(models.TextChoices):
+        INITIAL = "INITIAL", "Beginning balance"
+        ORDER = "ORDER", "Order"
+        RESTOCK = "RESTOCK", "Restock"
+        ADJUST = "ADJUST", "Manual adjustment"
+        REFUND = "REFUND", "Refund/Return"
+
+    product = models.ForeignKey("products.Product", on_delete=models.CASCADE, related_name="inventory_logs")
+    change_type = models.CharField(max_length=20, choices=ChangeType.choices)
+    delta = models.IntegerField()  # negative = reduce, positive = add
+    note = models.CharField(max_length=255, blank=True)
+    order_id = models.IntegerField(null=True, blank=True)  # simple link to order without circular imports
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product} {self.delta} ({self.change_type})"
