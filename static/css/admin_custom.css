@@ -5,11 +5,40 @@ body {
 
 #header {
   background-color: #2f6f5e !important;
+  position: relative !important;
+  margin-top: 50px !important;
 }
 
 #site-name a {
   color: white !important;
   font-weight: bold;
+}
+
+/* Navigation links outside admin header - positioned above the header */
+#header .admin-nav-links {
+  position: absolute !important;
+  top: -55px !important;
+  left: 0 !important;
+  right: 0 !important;
+  display: flex !important;
+  gap: 35px !important;
+  align-items: center !important;
+  padding: 12px 20px !important;
+  background: transparent !important;
+  z-index: 1000 !important;
+}
+
+#header .admin-nav-links a {
+  color: #0066cc !important;
+  font-weight: bold !important;
+  text-decoration: none !important;
+  font-size: 18px !important;
+  padding: 8px 12px !important;
+}
+
+#header .admin-nav-links a:hover {
+  text-decoration: underline !important;
+  color: #0052a3 !important;
 }
 
 /* Make our injected header act like a nav bar */
@@ -20,18 +49,5 @@ body {
   padding:12px 20px !important;
   background:#2f6f5e !important;
   border-radius: 6px 6px 0 0;
-}
-
-/* Style the links */
-.site-admin-header .admin-nav-links a{
-  color:#fff !important;
-  font-weight:bold !important;
-  text-decoration:none !important;
-  margin-right:18px !important;
-  font-size: 18px;      /* try 16px, 18px, 20px */
-}
-
-.site-admin-header .admin-nav-links a:hover{
-  text-decoration:underline !important;
 }
 

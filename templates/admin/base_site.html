@@ -2,14 +2,13 @@
 {% load static %}
 
 {% block branding %}
+  <div class="admin-nav-links">
+    <a href="{% url 'home:home' %}">Home</a>
+    <a href="{% url 'members:my_membership' %}">Membership</a>
+    <a href="{% url 'cart:cart_detail' %}">Cart</a>
+  </div>
+  
   <div class="site-admin-header">
-    <div class="admin-nav-links">
-      <a href="{% url 'home:home' %}">Home</a>
-       <a href="{% url 'members:my_membership' %}">Membership</a>
-      <a href="{% url 'cart:cart_detail' %}">Cart</a>
-   
-    </div>
-
     <div class="admin-account-area">
       {% if user.is_authenticated %}
         👤 You are logged in as <strong>{{ user.username }}</strong>
@@ -20,5 +19,5 @@
 
 {% block extrahead %}
   {{ block.super }}
-  <link rel="stylesheet" href="{% static 'admin_custom.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
 {% endblock %}
