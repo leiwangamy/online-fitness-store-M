@@ -39,6 +39,10 @@ backups/
 
 # --- Environment variables ---
 .env
+ec2.env
+# Allow .env.example files to be committed (templates)
+!.env.example
+!ec2.env.example
 
 # --- Temporary files ---
 error.txt

@@ -25,16 +25,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ------------------------------------------------------------
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
+# ALLOWED_HOSTS from environment variable (comma-separated)
+# Example: ALLOWED_HOSTS=ec2-15-223-56-68.ca-central-1.compute.amazonaws.com,example.com
+allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "")
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+else:
+    # Default for local development
+    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+
+# CSRF_TRUSTED_ORIGINS from environment variable (comma-separated)
+# Example: CSRF_TRUSTED_ORIGINS=https://ec2-15-223-56-68.ca-central-1.compute.amazonaws.com,https://example.com
+csrf_origins_env = os.environ.get("CSRF_TRUSTED_ORIGINS", "")
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(",") if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = []
 
 # Replit support (safe locally)
 replit_domains = os.environ.get("REPLIT_DOMAINS")
 if replit_domains:
     domain_list = [d.strip() for d in replit_domains.split(",") if d.strip()]
     ALLOWED_HOSTS += domain_list
-    CSRF_TRUSTED_ORIGINS = [f"https://{d}" for d in domain_list]
-else:
-    CSRF_TRUSTED_ORIGINS = []
+    CSRF_TRUSTED_ORIGINS += [f"https://{d}" for d in domain_list]
 
 # ------------------------------------------------------------
 # Applications
@@ -73,6 +87,7 @@ INSTALLED_APPS = [
 # ------------------------------------------------------------
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -181,6 +196,10 @@ USE_TZ = True
 # ------------------------------------------------------------
 STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"  # For production (collectstatic)
+
+# WhiteNoise configuration for serving static files
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
