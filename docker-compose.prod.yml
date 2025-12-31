@@ -39,7 +39,7 @@ services:
       sh -c "
       python manage.py migrate &&
       python manage.py collectstatic --noinput &&
-      gunicorn fitness_club.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+      gunicorn fitness_club.fitness_club.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
       "
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
