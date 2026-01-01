@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Your Email Address – Fitness Club{% endblock %}
+
+{% block extra_css %}
+<style>
+  .verification-card {
+    max-width: 600px;
+    padding: 30px 40px;
+    border: 1px solid #ccc;
+    background: #fff;
+    margin: 30px auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .verification-card h1 {
+    color: #2d6a4f;
+    margin-bottom: 20px;
+    font-size: 2rem;
+  }
+
+  .verification-card p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .verification-card .info-box {
+    background: #f0f8f4;
+    border-left: 4px solid #2d6a4f;
+    padding: 15px 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+  }
+
+  .verification-card .info-box strong {
+    color: #2d6a4f;
+  }
+
+  .verification-card ul {
+    list-style: none;
+    padding-left: 0;
+    margin: 15px 0;
+  }
+
+  .verification-card ul li {
+    padding: 8px 0;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .verification-card ul li:last-child {
+    border-bottom: none;
+  }
+
+  .verification-card a {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  .verification-card a:hover {
+    text-decoration: underline;
+  }
+
+  .menu-links {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .menu-links a {
+    display: inline-block;
+    margin-right: 15px;
+    padding: 8px 16px;
+    background: #2d6a4f;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: background 0.3s;
+  }
+
+  .menu-links a:hover {
+    background: #1b4332;
+    text-decoration: none;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verification-card">
+  <h1>Verify Your Email Address</h1>
+
+  {% if messages %}
+    <div class="info-box">
+      <strong>Messages:</strong>
+      <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <p>
+    We have sent an email to you for verification. Follow the link provided to finalize the signup process. 
+    If you do not see the verification email in your main inbox, check your spam folder. 
+    Please contact us if you do not receive the verification email within a few minutes.
+  </p>
+
+  <div class="menu-links">
+    <a href="{% url 'account_login' %}">Sign In</a>
+    <a href="{% url 'account_signup' %}">Sign Up</a>
+  </div>
+</div>
+{% endblock %}
+
