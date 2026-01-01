@@ -1,8 +1,10 @@
+import os
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
+from django.views.static import serve
 
 
 def health_check(request):
@@ -37,5 +39,12 @@ urlpatterns = [
     path("payment/", include(("payment.urls", "payment"), namespace="payment")),
 ]
 
+# Serve media files (in production, consider using nginx or a CDN)
+# For now, serving media files directly through Django
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # In production, serve media files (can be replaced with nginx later)
+    urlpatterns += [
+        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
+    ]
