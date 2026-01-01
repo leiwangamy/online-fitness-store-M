@@ -162,6 +162,9 @@ ACCOUNT_UNIQUE_EMAIL = True  # Required when login isn't username-only
 ACCOUNT_USERNAME_REQUIRED = False  # Username not required when using email
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 
+# Custom adapter to ensure username is set to email
+ACCOUNT_ADAPTER = "accounts.adapters.CustomAccountAdapter"
+
 # Redirects
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"
