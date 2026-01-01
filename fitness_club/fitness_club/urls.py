@@ -33,6 +33,9 @@ urlpatterns = [
 
     # profile app (NOTE: app is "profiles")
     path("profiles/", include(("profiles.urls", "profiles"), namespace="profiles")),
+    
+    # core app (contact page)
+    path("", include(("core.urls", "core"), namespace="core")),
 
     path("cart/", include(("cart.urls", "cart"), namespace="cart")),
     path("orders/", include(("orders.urls", "orders"), namespace="orders")),

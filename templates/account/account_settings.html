@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Account Settings – Fitness Club{% endblock %}
+
+{% block extra_css %}
+<style>
+  .settings-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .settings-container h1 {
+    color: #2d6a4f;
+    margin-bottom: 30px;
+    font-size: 2rem;
+  }
+
+  .settings-section {
+    margin-bottom: 40px;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .settings-section:last-child {
+    border-bottom: none;
+  }
+
+  .settings-section h2 {
+    color: #2d6a4f;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 6px 0 16px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #2d6a4f;
+    box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.1);
+  }
+
+  label {
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-top: 12px;
+  }
+
+  button[type="submit"] {
+    padding: 12px 24px;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+
+  button[type="submit"]:hover {
+    background: #1b4332;
+  }
+
+  .action-links {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 30px;
+  }
+
+  .action-link {
+    display: inline-block;
+    padding: 12px 24px;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: all 0.3s;
+  }
+
+  .action-link.password {
+    background: #0066cc;
+    color: white;
+  }
+
+  .action-link.password:hover {
+    background: #0052a3;
+  }
+
+  .action-link.delete {
+    background: #dc3545;
+    color: white;
+  }
+
+  .action-link.delete:hover {
+    background: #c82333;
+  }
+
+  .helptext,
+  ul.errorlist {
+    color: #dc3545;
+    font-size: 0.9rem;
+    margin-top: 5px;
+  }
+
+  .helptext {
+    color: #666;
+  }
+
+  {% if user.deletion_record %}
+  .deletion-warning {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+    color: #856404;
+  }
+
+  .deletion-warning h3 {
+    color: #856404;
+    margin-bottom: 10px;
+  }
+  {% endif %}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+  <h1>Account Settings</h1>
+
+  {% if user.deletion_record %}
+    <div class="deletion-warning">
+      <h3>⚠️ Account Scheduled for Deletion</h3>
+      <p>
+        Your account was scheduled for deletion on {{ user.deletion_record.deleted_at|date:"F d, Y" }}.
+        You have {{ user.deletion_record.days_until_permanent }} day{{ user.deletion_record.days_until_permanent|pluralize }} 
+        remaining to recover your account.
+      </p>
+      <p>
+        <a href="{% url 'accounts:recover_account' %}" style="color: #856404; font-weight: bold;">
+          Click here to recover your account →
+        </a>
+      </p>
+    </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="settings-section">
+      <h2>Email Address</h2>
+      {{ email_form.as_p }}
+    </div>
+
+    <div class="settings-section">
+      <h2>Profile Information</h2>
+      {{ profile_form.as_p }}
+    </div>
+
+    <button type="submit">Save Changes</button>
+  </form>
+
+  <div class="action-links">
+    <a href="{% url 'accounts:password_change' %}" class="action-link password">
+      🔒 Change Password
+    </a>
+    <a href="{% url 'accounts:delete_account' %}" class="action-link delete">
+      🗑️ Delete Account
+    </a>
+  </div>
+</div>
+{% endblock %}
+

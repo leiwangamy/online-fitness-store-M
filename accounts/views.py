@@ -6,8 +6,11 @@ from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login as auth_login
 
-from .forms import AccountEmailForm, ProfileForm
+from .forms import AccountEmailForm, ProfileForm, CustomPasswordChangeForm, AccountDeletionForm
 from profiles.models import Profile
+from core.models import UserDeletion
+from django.utils import timezone
+from django.contrib.auth import update_session_auth_hash
 
 from django.urls import reverse
 
@@ -52,4 +55,87 @@ def account_settings(request):
     return render(request, "account/account_settings.html", {
         "email_form": email_form,
         "profile_form": profile_form,
+    })
+
+
+@login_required
+def password_change(request):
+    """Allow users to change their password"""
+    if request.method == "POST":
+        form = CustomPasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important: keeps user logged in
+            messages.success(request, "Your password has been successfully changed.")
+            return redirect("accounts:password_change")
+        else:
+            messages.error(request, "Please correct the errors below.")
+    else:
+        form = CustomPasswordChangeForm(request.user)
+    
+    return render(request, "account/password_change.html", {
+        "form": form
+    })
+
+
+@login_required
+def delete_account(request):
+    """Soft delete user account with 30-day recovery period"""
+    user = request.user
+    
+    # Check if account is already deleted
+    if hasattr(user, 'deletion_record'):
+        messages.warning(request, "Your account is already scheduled for deletion.")
+        return redirect("accounts:account_settings")
+    
+    if request.method == "POST":
+        form = AccountDeletionForm(request.POST)
+        if form.is_valid() and form.cleaned_data['confirm']:
+            # Create deletion record
+            UserDeletion.objects.create(
+                user=user,
+                reason=form.cleaned_data.get('reason', '')
+            )
+            # Log out the user
+            logout(request)
+            messages.success(
+                request,
+                "Your account has been scheduled for deletion. You can recover it within 30 days by logging in."
+            )
+            return redirect("home:home")
+    else:
+        form = AccountDeletionForm()
+    
+    return render(request, "account/delete_account.html", {
+        "form": form
+    })
+
+
+@login_required
+def recover_account(request):
+    """Recover a soft-deleted account"""
+    user = request.user
+    
+    if not hasattr(user, 'deletion_record'):
+        messages.info(request, "Your account is not scheduled for deletion.")
+        return redirect("accounts:account_settings")
+    
+    deletion = user.deletion_record
+    
+    if not deletion.can_recover:
+        messages.error(
+            request,
+            "The 30-day recovery period has expired. Your account cannot be recovered."
+        )
+        return redirect("home:home")
+    
+    if request.method == "POST":
+        # Delete the deletion record to restore the account
+        deletion.delete()
+        messages.success(request, "Your account has been successfully recovered!")
+        return redirect("accounts:account_settings")
+    
+    return render(request, "account/recover_account.html", {
+        "deletion": deletion,
+        "days_remaining": deletion.days_until_permanent
     })

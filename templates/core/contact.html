@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Contact Us – Fitness Club{% endblock %}
+
+{% block extra_css %}
+<style>
+  .contact-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .contact-container h1 {
+    color: #2d6a4f;
+    margin-bottom: 30px;
+    font-size: 2.5rem;
+  }
+
+  .contact-info {
+    display: grid;
+    gap: 25px;
+  }
+
+  .contact-item {
+    padding: 20px;
+    background: #f0f8f4;
+    border-left: 4px solid #2d6a4f;
+    border-radius: 5px;
+  }
+
+  .contact-item h2 {
+    color: #2d6a4f;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .contact-item p {
+    margin: 8px 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .contact-item a {
+    color: #0066cc;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  .contact-item a:hover {
+    text-decoration: underline;
+  }
+
+  .icon {
+    font-size: 1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contact-container">
+  <h1>Contact Us</h1>
+  
+  <div class="contact-info">
+    <div class="contact-item">
+      <h2>
+        <span class="icon">📞</span>
+        Phone
+      </h2>
+      <p><a href="tel:{{ company_info.phone }}">{{ company_info.phone }}</a></p>
+    </div>
+
+    <div class="contact-item">
+      <h2>
+        <span class="icon">📧</span>
+        Email
+      </h2>
+      <p><a href="mailto:{{ company_info.email }}">{{ company_info.email }}</a></p>
+    </div>
+
+    {% if company_info.address %}
+    <div class="contact-item">
+      <h2>
+        <span class="icon">📍</span>
+        Address
+      </h2>
+      <p style="white-space: pre-line;">{{ company_info.address }}</p>
+    </div>
+    {% endif %}
+
+    {% if company_info.description %}
+    <div class="contact-item">
+      <h2>
+        <span class="icon">ℹ️</span>
+        About Us
+      </h2>
+      <p style="white-space: pre-line;">{{ company_info.description }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

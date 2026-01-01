@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Recover Account – Fitness Club{% endblock %}
+
+{% block extra_css %}
+<style>
+  .card {
+    max-width: 600px;
+    padding: 30px 40px;
+    border: 1px solid #2d6a4f;
+    background: #fff;
+    margin: 30px auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .card h1 {
+    color: #2d6a4f;
+    margin-bottom: 20px;
+    font-size: 2rem;
+  }
+
+  .info-box {
+    background: #d1ecf1;
+    border-left: 4px solid #2d6a4f;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+    color: #0c5460;
+  }
+
+  .warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+    color: #856404;
+  }
+
+  .days-remaining {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2d6a4f;
+    margin: 15px 0;
+  }
+
+  .card p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #333;
+    margin: 15px 0;
+  }
+
+  .card button[type="submit"] {
+    padding: 12px 24px;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .card button[type="submit"]:hover {
+    background: #1b4332;
+  }
+
+  .cancel-link {
+    display: inline-block;
+    margin-top: 20px;
+    color: #0066cc;
+    text-decoration: none;
+    text-align: center;
+    width: 100%;
+  }
+
+  .cancel-link:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Recover Your Account</h1>
+  
+  {% if deletion.can_recover %}
+    <div class="info-box">
+      <h2>✅ Account Recovery Available</h2>
+      <div class="days-remaining">
+        {{ days_remaining }} day{{ days_remaining|pluralize }} remaining
+      </div>
+      <p>
+        Your account was scheduled for deletion on <strong>{{ deletion.deleted_at|date:"F d, Y" }}</strong>.
+        You can recover your account now, or it will be permanently deleted in {{ days_remaining }} day{{ days_remaining|pluralize }}.
+      </p>
+    </div>
+
+    <p>Click the button below to restore your account and regain full access to all features.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <button type="submit">Recover My Account</button>
+    </form>
+  {% else %}
+    <div class="warning-box">
+      <h2>⚠️ Recovery Period Expired</h2>
+      <p>
+        Unfortunately, the 30-day recovery period has expired. Your account has been permanently deleted 
+        and cannot be recovered.
+      </p>
+      <p>If you need assistance, please <a href="{% url 'core:contact' %}">contact us</a>.</p>
+    </div>
+  {% endif %}
+
+  <a href="{% url 'home:home' %}" class="cancel-link">Go to Home Page</a>
+</div>
+{% endblock %}
+

@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Account – Fitness Club{% endblock %}
+
+{% block extra_css %}
+<style>
+  .card {
+    max-width: 600px;
+    padding: 30px 40px;
+    border: 1px solid #dc3545;
+    background: #fff;
+    margin: 30px auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .card h1 {
+    color: #dc3545;
+    margin-bottom: 20px;
+    font-size: 2rem;
+  }
+
+  .warning-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+  }
+
+  .warning-box h2 {
+    color: #856404;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+  }
+
+  .warning-box ul {
+    margin: 10px 0;
+    padding-left: 20px;
+    color: #856404;
+  }
+
+  .warning-box li {
+    margin: 8px 0;
+  }
+
+  .recovery-info {
+    background: #d1ecf1;
+    border-left: 4px solid #0c5460;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 5px;
+    color: #0c5460;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0 16px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+  }
+
+  .card label {
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-top: 12px;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 20px 0;
+  }
+
+  .checkbox-label input[type="checkbox"] {
+    margin-top: 4px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .card button[type="submit"] {
+    padding: 12px 24px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .card button[type="submit"]:hover {
+    background: #c82333;
+  }
+
+  .cancel-link {
+    display: inline-block;
+    margin-top: 20px;
+    color: #0066cc;
+    text-decoration: none;
+    text-align: center;
+    width: 100%;
+  }
+
+  .cancel-link:hover {
+    text-decoration: underline;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>Delete Account</h1>
+  
+  <div class="warning-box">
+    <h2>⚠️ Warning: This action cannot be easily undone!</h2>
+    <p><strong>When you delete your account:</strong></p>
+    <ul>
+      <li>Your account will be deactivated immediately</li>
+      <li>You will be logged out</li>
+      <li>Your account data will be marked for deletion</li>
+      <li>You have <strong>30 days</strong> to recover your account</li>
+      <li>After 30 days, your account will be permanently deleted</li>
+    </ul>
+  </div>
+
+  <div class="recovery-info">
+    <strong>🔒 Recovery Period:</strong> You can recover your account by logging in within 30 days. 
+    After 30 days, your account and all associated data will be permanently deleted and cannot be recovered.
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="checkbox-label">
+      {{ form.confirm }}
+      <label for="{{ form.confirm.id_for_label }}">{{ form.confirm.label }}</label>
+    </div>
+    {% if form.confirm.errors %}
+      <ul class="errorlist">
+        {% for error in form.confirm.errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}</label>
+    {{ form.reason }}
+    {% if form.reason.errors %}
+      <ul class="errorlist">
+        {% for error in form.reason.errors %}
+          <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <button type="submit">Delete My Account</button>
+  </form>
+
+  <a href="{% url 'accounts:account_settings' %}" class="cancel-link">Cancel - Go Back to Account Settings</a>
+</div>
+{% endblock %}
+
