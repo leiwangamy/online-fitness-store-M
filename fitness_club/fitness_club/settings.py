@@ -183,6 +183,8 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # Always enforce verification rules (recommended)
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/"  # Redirect to home after email confirmation
+ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/"  # Redirect to home if already logged in
 
 # Choose backend based on DEBUG or EMAIL_BACKEND env var
 # Allow overriding email backend via environment variable for testing
