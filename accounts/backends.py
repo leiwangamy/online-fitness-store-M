@@ -1,5 +1,7 @@
 """
 Custom authentication backend to prevent soft-deleted users from logging in.
+Note: This backend runs AFTER allauth's backend, so it only checks soft deletion
+for users authenticated by ModelBackend (admin, etc.), not email auth handled by allauth.
 """
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth import get_user_model
@@ -12,13 +14,15 @@ class SoftDeleteAwareBackend(ModelBackend):
     """
     Authentication backend that prevents soft-deleted users from logging in,
     but allows recovery if within the 30-day window.
+    This only handles username-based authentication; email auth is handled by allauth.
     """
     
     def authenticate(self, request, username=None, password=None, **kwargs):
         """
         Authenticate user, but check if they're soft-deleted first.
+        Only handles username-based auth; email auth is handled by allauth backend.
         """
-        # Try normal authentication
+        # Try normal authentication (username-based only)
         user = super().authenticate(request, username=username, password=password, **kwargs)
         
         if user is None:
@@ -29,7 +33,6 @@ class SoftDeleteAwareBackend(ModelBackend):
             deletion = user.deletion_record
             if deletion.can_recover:
                 # User is deleted but can recover - allow login and show recovery message
-                # The view will handle showing recovery option
                 return user
             else:
                 # Past recovery period - don't allow login

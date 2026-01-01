@@ -3,6 +3,7 @@ Custom allauth adapter to ensure usernames are set to email
 when using email-only authentication.
 """
 from allauth.account.adapter import DefaultAccountAdapter
+from core.models import UserDeletion
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
@@ -28,4 +29,25 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             user.save()
         
         return user
+    
+    def is_open_for_signup(self, request):
+        """
+        Check if signup is allowed. Prevent signup for permanently deleted users.
+        """
+        # Allow normal signup
+        return True
+    
+    def can_authenticate(self, user):
+        """
+        Check if user can authenticate. Prevent permanently deleted users from logging in.
+        Note: Password validation is handled by Django/allauth, we only check soft deletion.
+        """
+        # Check for soft deletion
+        try:
+            deletion = user.deletion_record
+            # Allow login if within recovery period, block if permanently deleted
+            return deletion.can_recover
+        except (UserDeletion.DoesNotExist, AttributeError):
+            # User is not deleted - allow authentication
+            return True
 

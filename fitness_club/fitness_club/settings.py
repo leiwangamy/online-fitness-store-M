@@ -151,9 +151,9 @@ DATABASES = {
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
+    "allauth.account.auth_backends.AuthenticationBackend",  # Allauth backend first for email auth
     "accounts.backends.SoftDeleteAwareBackend",  # Custom backend that handles soft-deleted users
     "django.contrib.auth.backends.ModelBackend",
-    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 # Modern allauth settings (Django 5+)
