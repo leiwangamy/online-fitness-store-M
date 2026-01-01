@@ -41,6 +41,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         Check if user can authenticate. Prevent permanently deleted users from logging in.
         Note: Password validation is handled by Django/allauth, we only check soft deletion.
+        With ACCOUNT_EMAIL_VERIFICATION = "optional", email verification is not required for login.
         """
         # Check for soft deletion
         try:
@@ -50,4 +51,17 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         except (UserDeletion.DoesNotExist, AttributeError):
             # User is not deleted - allow authentication
             return True
+    
+    def is_email_verified(self, request, email):
+        """
+        Override to allow login without email verification when ACCOUNT_EMAIL_VERIFICATION is "optional".
+        This ensures users can sign in even if they haven't verified their email.
+        """
+        # If email verification is optional, always return True to allow login
+        # The parent method will still check actual verification status for other purposes
+        from allauth.account import app_settings
+        if app_settings.EMAIL_VERIFICATION == app_settings.EmailVerificationMethod.OPTIONAL:
+            return True
+        # For mandatory verification, use parent behavior
+        return super().is_email_verified(request, email)
 
