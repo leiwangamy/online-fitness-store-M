@@ -34,7 +34,6 @@ services:
     volumes:
       - .:/app
       - static_volume:/app/staticfiles
-      - media_volume:/app/media
     command: >
       sh -c "
       python manage.py migrate &&
@@ -51,5 +50,4 @@ services:
 volumes:
   postgres_data:
   static_volume:
-  media_volume:
 
