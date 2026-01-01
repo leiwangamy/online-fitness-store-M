@@ -174,8 +174,12 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 
-# Choose backend based on DEBUG
-if DEBUG:
+# Choose backend based on DEBUG or EMAIL_BACKEND env var
+# Allow overriding email backend via environment variable for testing
+email_backend_override = os.environ.get("EMAIL_BACKEND", "")
+if email_backend_override:
+    EMAIL_BACKEND = email_backend_override
+elif DEBUG:
     # Dev: print emails to console (you'll see the verification link in logs)
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
