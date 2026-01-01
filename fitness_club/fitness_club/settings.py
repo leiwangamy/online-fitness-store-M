@@ -187,6 +187,7 @@ else:
     EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() == "true"
     EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_TIMEOUT = 10  # Timeout in seconds for SMTP connection
 
     if EMAIL_USE_TLS and EMAIL_USE_SSL:
         raise ValueError("Only one of EMAIL_USE_TLS or EMAIL_USE_SSL can be True.")
