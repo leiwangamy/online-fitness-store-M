@@ -31,6 +31,11 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 allowed_hosts_env = os.environ.get("ALLOWED_HOSTS", "")
 if allowed_hosts_env:
     ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(",") if host.strip()]
+    # Always include localhost and 127.0.0.1 for health checks and local access
+    if "localhost" not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append("localhost")
+    if "127.0.0.1" not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append("127.0.0.1")
 else:
     # Default for local development
     ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
