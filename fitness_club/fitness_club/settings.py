@@ -180,8 +180,10 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     "Fitness Club <no-reply@lwsoc.com>"
 )
 
-# Always enforce verification rules (recommended)
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
+# Email verification settings
+# "optional" = email verification is sent but not required for login
+# Users can sign in with just email and password
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "optional")
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/"  # Redirect to home after email confirmation
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/"  # Redirect to home if already logged in
