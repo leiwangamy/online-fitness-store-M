@@ -62,7 +62,4 @@ class MemberProfile(models.Model):
             self.next_billing_date = today + timedelta(days=30)
             self.save()
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_member_profile(sender, instance, created, **kwargs):
-    if created:
-        MemberProfile.objects.get_or_create(user=instance)
+# Note: Member profile creation signal is in signals.py to avoid duplicates
