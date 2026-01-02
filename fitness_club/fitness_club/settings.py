@@ -190,6 +190,8 @@ ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login AFTER email confirmatio
 ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True  # Redirect authenticated users
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/"  # Redirect to home after email confirmation
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/"  # Redirect to home if already logged in
+# Allow email confirmation for anonymous users (don't require login to confirm email)
+ACCOUNT_EMAIL_CONFIRMATION_HMAC = True  # Use HMAC for email confirmation keys (more secure)
 
 # Choose backend based on DEBUG or EMAIL_BACKEND env var
 # Allow overriding email backend via environment variable for testing

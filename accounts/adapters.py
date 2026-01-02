@@ -31,13 +31,6 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         return user
     
     
-    def is_open_for_signup(self, request):
-        """
-        Check if signup is allowed. Prevent signup for permanently deleted users.
-        """
-        # Allow normal signup
-        return True
-    
     def can_authenticate(self, user):
         """
         Check if user can authenticate. Prevent permanently deleted users from logging in.
@@ -53,13 +46,25 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             # User is not deleted - allow authentication
             return True
     
+    def is_open_for_signup(self, request):
+        """
+        Check if signup is allowed. Prevent signup for permanently deleted users.
+        Also ensure email confirmation links work for anonymous users.
+        """
+        # Allow normal signup
+        return True
+    
     def is_email_verified(self, request, email):
         """
         Override to allow login without email verification for existing users,
         but require verification for new signups.
         
+        IMPORTANT: This method is NOT called during email confirmation.
+        It's only called during login/signup to check if email verification is required.
+        
         - During SIGNUP: Email verification is mandatory (user must verify)
         - During LOGIN: Email verification is optional (existing users can log in)
+        - During EMAIL CONFIRMATION: This method is not called - confirmation happens separately
         """
         from allauth.account.models import EmailAddress
         from django.contrib.auth import get_user_model
@@ -67,6 +72,12 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         from datetime import timedelta
         
         User = get_user_model()
+        
+        # Skip this check if we're on the email confirmation page
+        # (This shouldn't be called there, but just to be safe)
+        if '/accounts/confirm-email/' in request.path:
+            # Use parent method for email confirmation - don't interfere
+            return super().is_email_verified(request, email)
         
         # Check if user exists in database
         try:

@@ -13,6 +13,8 @@ from django.utils import timezone
 from django.contrib.auth import update_session_auth_hash
 
 from django.urls import reverse
+from django.contrib.auth import get_user_model
+from django.conf import settings
 
 def signup(request):
     # (Not used if allauth handles signup)
@@ -138,4 +140,32 @@ def recover_account(request):
     return render(request, "account/recover_account.html", {
         "deletion": deletion,
         "days_remaining": deletion.days_until_permanent
+    })
+
+
+def test_email_confirm(request):
+    """
+    Test view to preview the email confirmation page.
+    Only works in DEBUG mode for safety.
+    Access at: /accounts/test-email-confirm/
+    """
+    if not settings.DEBUG:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("This view is only available in DEBUG mode.")
+    
+    # Create a simple mock confirmation object for preview
+    class MockEmailAddress:
+        def __init__(self):
+            self.email = "test@example.com"
+    
+    class MockConfirmation:
+        def __init__(self):
+            self.email_address = MockEmailAddress()
+            self.key = "test-key-123"
+    
+    # Create mock confirmation object
+    confirmation = MockConfirmation()
+    
+    return render(request, "account/email_confirm.html", {
+        "confirmation": confirmation
     })
