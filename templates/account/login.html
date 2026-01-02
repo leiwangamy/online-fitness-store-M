@@ -58,7 +58,11 @@
   </form>
 
   <p style="margin-top:15px;">
-    Don’t have an account yet?
+    <a href="{% url 'account_reset_password' %}">Forgot your password?</a>
+  </p>
+
+  <p style="margin-top:15px;">
+    Don't have an account yet?
     <a href="{% url 'account_signup' %}">Create a new member account</a>
   </p>
 </div>
