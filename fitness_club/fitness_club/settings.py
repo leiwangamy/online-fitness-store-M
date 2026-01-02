@@ -168,9 +168,9 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_ADAPTER = "accounts.adapters.CustomAccountAdapter"
 
 # Redirects
-LOGIN_URL = "/accounts/login/"
-LOGIN_REDIRECT_URL = "/orders/my-orders/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
+LOGIN_URL = "/accounts/login/"
 
 # ------------------------------------------------------------
 # Email
