@@ -66,14 +66,38 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         
         User = get_user_model()
         
-        # Check if this is a login attempt (user already exists)
+        # Check if this is a signup request by looking at the request path
+        is_signup_request = (
+            request.path == '/accounts/signup/' or 
+            '/accounts/signup' in request.path or
+            request.resolver_match and 'signup' in request.resolver_match.url_name
+        )
+        
+        # Check if user exists
         try:
             user = User.objects.get(email=email)
-            # User exists - this is a login attempt, allow login without verification
-            # Existing users can always log in, even if email isn't verified
-            return True
+            
+            # Check if email is verified
+            try:
+                email_address = EmailAddress.objects.get_for_user(user, email)
+                if email_address.verified:
+                    # Email is verified - always allow
+                    return True
+            except EmailAddress.DoesNotExist:
+                pass
+            
+            # Email is not verified
+            if is_signup_request:
+                # This is a signup attempt - require email verification
+                # Return False to prevent auto-login during signup
+                return False
+            else:
+                # This is a login attempt - allow login without verification
+                # Existing users can log in even if email isn't verified
+                return True
+                
         except User.DoesNotExist:
-            # User doesn't exist - this is a signup attempt
+            # User doesn't exist - this is definitely a signup attempt
             # For new signups, require email verification (use parent method)
             return super().is_email_verified(request, email)
 
