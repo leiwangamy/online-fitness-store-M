@@ -184,7 +184,10 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # "mandatory" = email verification required for new signups
 # We override is_email_verified() in adapter to allow login without verification for existing users
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+# When email verification is mandatory, users are NOT auto-logged in after signup
+# They must verify their email first, then they'll be logged in after confirmation
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login AFTER email confirmation
+ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True  # Redirect authenticated users
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/"  # Redirect to home after email confirmation
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/"  # Redirect to home if already logged in
 

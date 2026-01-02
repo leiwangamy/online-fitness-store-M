@@ -30,6 +30,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         
         return user
     
+    
     def is_open_for_signup(self, request):
         """
         Check if signup is allowed. Prevent signup for permanently deleted users.
