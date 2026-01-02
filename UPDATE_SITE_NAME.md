@@ -8,7 +8,7 @@ The "example.com" text in your verification emails comes from Django's Sites fra
 2. Go to **Sites** → **Sites**
 3. Click on the site (usually ID=1, named "example.com")
 4. Update:
-   - **Domain name**: `ec2-15-223-56-68.ca-central-1.compute.amazonaws.com` (or your domain)
+   - **Domain name**: `ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:8000` (MUST include :8000 port!)
    - **Display name**: `Fitness Club` (or your preferred name)
 5. Click **Save**
 
@@ -28,8 +28,8 @@ from django.contrib.sites.models import Site
 # Get the site (usually ID=1)
 site = Site.objects.get(id=1)
 
-# Update the domain and name
-site.domain = 'ec2-15-223-56-68.ca-central-1.compute.amazonaws.com'
+# Update the domain and name (MUST include :8000 port for email links to work!)
+site.domain = 'ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:8000'
 site.name = 'Fitness Club'
 site.save()
 

@@ -53,9 +53,16 @@
 <div class="card">
   <form method="post" action="{% url 'account_login' %}">
     {% csrf_token %}
+  
+    {# ✅ This keeps ?next=... through the POST #}
+    {% if redirect_field_value %}
+      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+    {% endif %}
+  
     {{ form.as_p }}
     <button type="submit">Log in</button>
   </form>
+  
 
   <p style="margin-top:15px;">
     <a href="{% url 'account_reset_password' %}">Forgot your password?</a>
