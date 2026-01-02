@@ -49,7 +49,17 @@ def create_downloads_and_email(request, order, days_valid=7, max_downloads=0):
     links = []
     for dl in downloads:
         path = reverse("orders:digital_download", args=[str(dl.token)])
-        url = request.build_absolute_uri(path)
+        # Use Site framework to get the correct domain (includes port :8000)
+        from django.contrib.sites.models import Site
+        site = Site.objects.get_current()
+        # Build URL with site domain (which includes :8000)
+        if site.domain:
+            # site.domain should be like "ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:8000"
+            protocol = 'https' if request.is_secure() else 'http'
+            url = f"{protocol}://{site.domain}{path}"
+        else:
+            # Fallback to request.build_absolute_uri if site domain not set
+            url = request.build_absolute_uri(path)
         links.append(f"{dl.product.name}: {url}")
 
     to_email = getattr(getattr(order, "user", None), "email", None)
