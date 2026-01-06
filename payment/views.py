@@ -148,6 +148,116 @@ def checkout(request):
     subtotal = subtotal.quantize(Decimal("0.01"))
     tax = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
     
+    # Check if there are any physical products (not digital, not service)
+    # If cart contains only digital products OR service products (or both), skip shipping/pickup
+    has_physical_products = any(
+        (not getattr(i["product"], "is_digital", False)) and (not getattr(i["product"], "is_service", False))
+        for i in items
+    )
+    
+    # If no physical products (only digital/service), skip shipping/pickup and show simplified checkout
+    if not has_physical_products:
+        # Digital/service only - no shipping needed, no address required
+        shipping = Decimal("0.00")
+        shipping_label = "No shipping (digital / service only)"
+        total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+        
+        # For POST requests, create order directly
+        if request.method == "POST":
+            if insufficient_items:
+                messages.error(request, "Some items are out of stock. Please adjust your cart.")
+                return redirect("payment:checkout")
+            
+            # Create order without shipping address
+            with transaction.atomic():
+                order = Order.objects.create(
+                    user=request.user,
+                    status="paid",
+                    subtotal=subtotal,
+                    tax=tax,
+                    shipping=shipping,
+                    total=total,
+                    is_pickup=False,
+                    pickup_location=None,
+                    # Use minimal shipping data from user profile
+                    ship_name=request.user.get_full_name() or request.user.get_username(),
+                    ship_phone="",
+                    ship_address1="",
+                    ship_address2="",
+                    ship_city="",
+                    ship_province="",
+                    ship_postal_code="",
+                    ship_country="Canada",
+                )
+                
+                # Create OrderItems and handle digital downloads
+                for i in items:
+                    product = i["product"]
+                    qty = int(i["quantity"])
+                    line_total = Decimal(str(i["line_total"]))
+                    
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=qty,
+                        price=Decimal(str(product.price)),
+                    )
+                    
+                    # Handle digital products
+                    is_digital = bool(getattr(product, "is_digital", False))
+                    if is_digital:
+                        log_purchase(
+                            product=product,
+                            quantity=qty,
+                            change_type="ORDER",
+                            created_by=request.user,
+                            order=order,
+                            note=f"Order #{order.id} - Digital product: {product.name} x{qty}"
+                        )
+                    
+                    # Handle services
+                    is_service = bool(getattr(product, "is_service", False))
+                    if is_service:
+                        seats = getattr(product, "service_seats", None)
+                        if seats is not None:
+                            product.refresh_from_db()
+                            product.service_seats = max(0, getattr(product, "service_seats", 0) - qty)
+                            product.save(update_fields=["service_seats"])
+                        log_purchase(
+                            product=product,
+                            quantity=qty,
+                            change_type="ORDER",
+                            created_by=request.user,
+                            order=order,
+                            note=f"Order #{order.id} - Service: {product.name} x{qty}"
+                        )
+                
+                # Create digital downloads and send email
+                create_downloads_and_email(request, order)
+                
+                _clear_cart(request)
+                request.session["last_order_id"] = order.id
+                messages.success(request, f"Order #{order.id} placed successfully!")
+                return redirect("payment:success")
+        
+        # For GET requests, show simplified checkout (no shipping form)
+        return render(
+            request,
+            "payment/checkout.html",
+            {
+                "empty": False,
+                "items": items,
+                "subtotal": subtotal,
+                "tax": tax,
+                "shipping": shipping,
+                "shipping_label": shipping_label,
+                "total": total,
+                "insufficient_items": insufficient_items,
+                "digital_only": True,  # Flag to hide shipping/pickup form in template (applies to digital AND service products)
+            },
+        )
+    
+    # Physical products present - show shipping/pickup form
     # Get pickup locations for template
     pickup_locations = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
     
