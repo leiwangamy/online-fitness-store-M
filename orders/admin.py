@@ -94,21 +94,44 @@ class OrderAdmin(admin.ModelAdmin):
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
 
-    @admin.display(description="Fulfillment", boolean=True)
+    @admin.display(description="Fulfillment")
     def fulfillment_method_display(self, obj):
+        """Display fulfillment method safely"""
+        if obj is None:
+            return "-"
         try:
-            return "Pickup" if getattr(obj, 'is_pickup', False) else "Shipping"
-        except Exception:
+            is_pickup = getattr(obj, 'is_pickup', False)
+            return "Pickup" if is_pickup else "Shipping"
+        except (AttributeError, Exception):
             return "Shipping"
 
     @admin.display(description="Pickup Location")
     def pickup_location_display(self, obj):
+        """Display pickup location safely"""
+        if obj is None:
+            return "-"
         try:
-            if getattr(obj, 'is_pickup', False) and hasattr(obj, 'pickup_location') and obj.pickup_location:
-                return str(obj.pickup_location.name)
-        except Exception:
-            pass
-        return "-"
+            is_pickup = getattr(obj, 'is_pickup', False)
+            if not is_pickup:
+                return "-"
+            
+            if not hasattr(obj, 'pickup_location'):
+                return "-"
+            
+            pickup_location = getattr(obj, 'pickup_location', None)
+            if pickup_location is None:
+                return "-"
+            
+            # Safely get the name
+            if hasattr(pickup_location, 'name'):
+                return str(pickup_location.name)
+            return "-"
+        except (AttributeError, Exception) as e:
+            # Log error but don't crash
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Error displaying pickup location for order {obj.id if obj else 'unknown'}: {e}")
+            return "-"
 
     @admin.display(description="Shipping/Pickup Address")
     def shipping_full_admin(self, obj):
