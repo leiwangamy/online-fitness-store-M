@@ -104,6 +104,12 @@
             display: block;
             margin: 0 auto 10px auto;
             border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        
+        .product-img:hover {
+            opacity: 0.8;
         }
         
         .product-card a {
@@ -283,11 +289,13 @@
             <div class="products-container">
                 {% for product in page_obj %}
                     <div class="product-card">
-                        {% if product.main_image_url %}
-                            <img src="{{ product.main_image_url }}" class="product-img" alt="{{ product.name }}">
-                        {% else %}
-                            <img src="/static/no-image.png" class="product-img" alt="No image">
-                        {% endif %}
+                        <a href="{% url 'products:detail' product.pk %}" style="text-decoration: none; display: block;">
+                            {% if product.main_image_url %}
+                                <img src="{{ product.main_image_url }}" class="product-img" alt="{{ product.name }}">
+                            {% else %}
+                                <img src="/static/no-image.png" class="product-img" alt="No image">
+                            {% endif %}
+                        </a>
 
                         <h3>{{ product.name }}</h3>
                         <p>${{ product.price }}</p>
