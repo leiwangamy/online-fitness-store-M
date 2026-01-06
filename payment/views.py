@@ -163,7 +163,7 @@ def checkout(request):
             messages.error(request, "Some items are out of stock. Please adjust your cart.")
             return redirect("payment:checkout")
 
-        form = ShippingAddressForm(request.POST)
+        form = ShippingAddressForm(request.POST, pickup_locations=pickup_locations)
         if not form.is_valid():
             # Recalculate shipping based on form data (even if invalid, to show correct preview)
             is_pickup = form.data.get("fulfillment_method") == "pickup"
@@ -332,7 +332,7 @@ def checkout(request):
     except Exception:
         profile = None
     
-    form = ShippingAddressForm(initial=initial)
+    form = ShippingAddressForm(initial=initial, pickup_locations=pickup_locations)
     return render(
         request,
         "payment/checkout.html",

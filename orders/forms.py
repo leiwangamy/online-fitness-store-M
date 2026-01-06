@@ -98,9 +98,14 @@ class ShippingAddressForm(forms.Form):
     )
     
     def __init__(self, *args, **kwargs):
+        # Extract pickup_locations if provided (for performance - avoid duplicate query)
+        pickup_locations = kwargs.pop('pickup_locations', None)
         super().__init__(*args, **kwargs)
         # Update queryset to get current active pickup locations
-        self.fields['pickup_location_id'].queryset = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
+        if pickup_locations is not None:
+            self.fields['pickup_location_id'].queryset = pickup_locations
+        else:
+            self.fields['pickup_location_id'].queryset = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
 
     # -------------------------
     # Validation
