@@ -370,6 +370,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const shippingFields = shippingSection.querySelectorAll('input[required], select[required]');
         shippingFields.forEach(field => field.removeAttribute('required'));
       }
+      // Make pickup location required when pickup is selected
+      if (pickupSelect) {
+        pickupSelect.setAttribute('required', 'required');
+      }
     } else {
       if (shippingSection) shippingSection.style.display = 'block';
       if (pickupSection) pickupSection.style.display = 'none';
@@ -379,6 +383,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const field = document.getElementById('id_' + fieldName);
         if (field) field.setAttribute('required', 'required');
       });
+      // Remove required from pickup location when shipping is selected
+      if (pickupSelect) {
+        pickupSelect.removeAttribute('required');
+      }
     }
     // Update shipping cost when method changes
     updateShippingCost();
@@ -439,18 +447,21 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Form validation before submission
   const form = document.querySelector('form');
-  const placeOrderBtn = document.getElementById('place-order-btn');
   const pickupLocationError = document.getElementById('pickup-location-error');
   
-  if (form && placeOrderBtn) {
+  if (form) {
     form.addEventListener('submit', function(e) {
       const selectedMethod = document.querySelector('input[name="fulfillment_method"]:checked');
       
       // Check if pickup is selected but no location is chosen
       if (selectedMethod && selectedMethod.value === 'pickup') {
-        const pickupSelectValue = pickupSelect ? pickupSelect.value : '';
-        if (!pickupSelectValue || pickupSelectValue === '') {
+        // Get pickup select element (might be in different scope)
+        const pickupSelectEl = document.getElementById('id_pickup_location_id');
+        const pickupSelectValue = pickupSelectEl ? pickupSelectEl.value : '';
+        
+        if (!pickupSelectValue || pickupSelectValue === '' || pickupSelectValue === '0') {
           e.preventDefault(); // Prevent form submission
+          e.stopPropagation(); // Stop event from bubbling
           
           // Show error message
           if (pickupLocationError) {
@@ -459,9 +470,21 @@ document.addEventListener('DOMContentLoaded', function() {
           }
           
           // Highlight the pickup location dropdown
-          if (pickupSelect) {
-            pickupSelect.style.border = '2px solid red';
-            pickupSelect.focus();
+          if (pickupSelectEl) {
+            pickupSelectEl.style.border = '2px solid red';
+            pickupSelectEl.style.backgroundColor = '#ffe6e6';
+            pickupSelectEl.focus();
+            
+            // Remove highlight when user selects a location
+            pickupSelectEl.addEventListener('change', function() {
+              if (this.value && this.value !== '' && this.value !== '0') {
+                this.style.border = '';
+                this.style.backgroundColor = '';
+                if (pickupLocationError) {
+                  pickupLocationError.style.display = 'none';
+                }
+              }
+            }, { once: true });
           }
           
           return false;
