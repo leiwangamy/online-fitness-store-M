@@ -291,7 +291,7 @@
                     <div class="product-card">
                         <a href="{% url 'products:detail' product.pk %}" style="text-decoration: none; display: block;">
                             {% if product.main_image_url %}
-                                <img src="{{ product.main_image_url }}" class="product-img" alt="{{ product.name }}" onerror="this.src='/static/no-image.png'; this.onerror=null;">
+                                <img src="{{ product.main_image_url }}" class="product-img" alt="{{ product.name }}" onerror="console.error('Image failed to load:', this.src); this.src='/static/no-image.png'; this.onerror=null;">
                             {% else %}
                                 <img src="/static/no-image.png" class="product-img" alt="No image">
                             {% endif %}
