@@ -190,13 +190,14 @@
     <h3>Select Pickup Location</h3>
     {% if pickup_locations %}
       <p>
-        <label for="{{ form.pickup_location_id.id_for_label }}">{{ form.pickup_location_id.label }}:</label>
+        <label for="id_pickup_location_id">{{ form.pickup_location_id.label }}:</label>
         {{ form.pickup_location_id }}
         {% if form.pickup_location_id.errors %}<span style="color: red;">{{ form.pickup_location_id.errors }}</span>{% endif %}
       </p>
       <div id="pickup-location-details" style="display: none;" class="pickup-location-info"></div>
     {% else %}
       <p style="color: #666; font-style: italic;">No pickup locations available at this time. Please select shipping instead.</p>
+      <input type="hidden" name="pickup_location_id" id="id_pickup_location_id" value="">
     {% endif %}
   </div>
 
@@ -253,22 +254,26 @@ document.addEventListener('DOMContentLoaded', function() {
   const fulfillmentRadios = document.querySelectorAll('input[name="fulfillment_method"]');
   const shippingSection = document.getElementById('shipping-section');
   const pickupSection = document.getElementById('pickup-section');
+  {% if form.pickup_location_id %}
   const pickupSelect = document.getElementById('{{ form.pickup_location_id.id_for_label }}');
+  {% else %}
+  const pickupSelect = document.getElementById('id_pickup_location_id');
+  {% endif %}
   const pickupDetails = document.getElementById('pickup-location-details');
   
   // Pickup locations data for JavaScript
   const pickupLocations = {
     {% for location in pickup_locations %}
     {{ location.id }}: {
-      name: "{{ location.name }}",
-      address1: "{{ location.address1 }}",
-      address2: "{{ location.address2|default:'' }}",
-      city: "{{ location.city }}",
-      province: "{{ location.province }}",
-      postal_code: "{{ location.postal_code }}",
-      country: "{{ location.country }}",
-      phone: "{{ location.phone|default:'' }}",
-      instructions: "{{ location.instructions|default:'' }}"
+      name: "{{ location.name|escapejs }}",
+      address1: "{{ location.address1|escapejs }}",
+      address2: "{{ location.address2|default:''|escapejs }}",
+      city: "{{ location.city|escapejs }}",
+      province: "{{ location.province|escapejs }}",
+      postal_code: "{{ location.postal_code|escapejs }}",
+      country: "{{ location.country|escapejs }}",
+      phone: "{{ location.phone|default:''|escapejs }}",
+      instructions: "{{ location.instructions|default:''|escapejs }}"
     }{% if not forloop.last %},{% endif %}
     {% endfor %}
   };
@@ -276,14 +281,16 @@ document.addEventListener('DOMContentLoaded', function() {
   function toggleFulfillmentSections() {
     const selectedMethod = document.querySelector('input[name="fulfillment_method"]:checked');
     if (selectedMethod && selectedMethod.value === 'pickup') {
-      shippingSection.style.display = 'none';
-      pickupSection.style.display = 'block';
+      if (shippingSection) shippingSection.style.display = 'none';
+      if (pickupSection) pickupSection.style.display = 'block';
       // Make shipping fields not required when pickup is selected
-      const shippingFields = shippingSection.querySelectorAll('input[required], select[required]');
-      shippingFields.forEach(field => field.removeAttribute('required'));
+      if (shippingSection) {
+        const shippingFields = shippingSection.querySelectorAll('input[required], select[required]');
+        shippingFields.forEach(field => field.removeAttribute('required'));
+      }
     } else {
-      shippingSection.style.display = 'block';
-      pickupSection.style.display = 'none';
+      if (shippingSection) shippingSection.style.display = 'block';
+      if (pickupSection) pickupSection.style.display = 'none';
       // Make shipping fields required when shipping is selected
       const requiredFields = ['ship_name', 'ship_address1', 'ship_city', 'ship_province', 'ship_postal_code'];
       requiredFields.forEach(fieldName => {
@@ -294,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   
   function updatePickupDetails() {
+    if (!pickupSelect || !pickupDetails) return;
     const selectedId = pickupSelect.value;
     if (selectedId && pickupLocations[selectedId]) {
       const loc = pickupLocations[selectedId];
@@ -314,7 +322,8 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Initial setup - set default to shipping if nothing is checked
   if (!document.querySelector('input[name="fulfillment_method"]:checked')) {
-    document.getElementById('id_fulfillment_method_0').checked = true;
+    const shippingRadio = document.getElementById('id_fulfillment_method_0');
+    if (shippingRadio) shippingRadio.checked = true;
   }
   toggleFulfillmentSections();
   
