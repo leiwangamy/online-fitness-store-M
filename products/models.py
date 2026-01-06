@@ -150,19 +150,26 @@ class Product(models.Model):
         Safe for templates: {{ product.main_image_url }}
         Works efficiently with prefetched images.
         """
-        # Get all images (works with both prefetched and non-prefetched)
-        # Using all() is safe - if prefetched, it uses cached data; otherwise queries DB
-        images = self.images.all()
-        
-        # Look for main image first
-        for img in images:
-            if img.is_main and img.image:
-                return img.image.url
-        
-        # If no main image, return first image
-        first_img = images.first()
-        if first_img and first_img.image:
-            return first_img.image.url
+        try:
+            # Check if images are prefetched by accessing the cached queryset
+            # If prefetched, use the cached data; otherwise query the DB
+            if hasattr(self, '_prefetched_objects_cache') and 'images' in self._prefetched_objects_cache:
+                images = self._prefetched_objects_cache['images']
+            else:
+                images = list(self.images.all())
+            
+            # Look for main image first
+            for img in images:
+                if img.is_main and img.image and img.image.name:
+                    return img.image.url
+            
+            # If no main image, return first image
+            for img in images:
+                if img.image and img.image.name:
+                    return img.image.url
+        except Exception:
+            # If anything goes wrong, return None (template will handle fallback)
+            pass
         
         return None
 
