@@ -78,12 +78,51 @@
 {% if empty %}
   <p>Your cart is empty.</p>
   <p><a href="{% url 'home:home' %}">Continue Shopping</a></p>
+{% elif digital_only %}
+  {# Digital/Service only - no shipping needed #}
+  <form method="post">
+    {% csrf_token %}
+    
+    <h2>Order Summary</h2>
+    <table>
+      <tr>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Line Total</th>
+      </tr>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>${{ item.line_total }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+
+    <div class="totals">
+      <p>Subtotal: <strong>${{ subtotal }}</strong></p>
+      <p>GST/HST (5%): <strong>${{ tax }}</strong></p>
+      <p>Shipping: <strong>${{ shipping }}</strong> ({{ shipping_label }})</p>
+      <p><strong>Total: ${{ total }}</strong></p>
+    </div>
+
+    <div class="buttons">
+      {% if not insufficient_items %}
+        <button type="submit" name="action" value="place_order">Place Order</button>
+      {% else %}
+        <a href="{% url 'cart:cart_detail' %}">Go back to Cart and adjust quantities</a>
+      {% endif %}
+
+      <a href="{% url 'home:home' %}">Continue Shopping</a>
+      <a href="{% url 'cart:cart_detail' %}">Back to Cart</a>
+    </div>
+  </form>
 {% else %}
+  {# Physical products - show shipping/pickup form #}
+  <form method="post">
+    {% csrf_token %}
 
-<form method="post">
-  {% csrf_token %}
-
-  <h2>Fulfillment Method</h2>
+    <h2>Fulfillment Method</h2>
   
   <div class="fulfillment-method">
     <label><strong>How would you like to receive your order?</strong></label>
@@ -243,13 +282,18 @@
 
   <div class="buttons">
     {% if not insufficient_items %}
-      <button type="submit" name="action" value="place_order">Place Order (demo)</button>
+      <button type="submit" name="action" value="place_order" id="place-order-btn">Place Order (demo)</button>
     {% else %}
       <a href="{% url 'cart:cart_detail' %}">Go back to Cart and adjust quantities</a>
     {% endif %}
 
     <a href="{% url 'home:home' %}">Continue Shopping</a>
     <a href="{% url 'cart:cart_detail' %}">Back to Cart</a>
+  </div>
+  
+  {# Error message for missing pickup location #}
+  <div id="pickup-location-error" style="display: none; color: red; font-weight: bold; margin-top: 15px; padding: 10px; background: #ffe6e6; border: 1px solid #ff9999; border-radius: 4px;">
+    Please select a pickup location before placing your order.
   </div>
 
 </form>
