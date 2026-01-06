@@ -1,6 +1,8 @@
 from django import forms
 import re
 
+from .models import PickupLocation
+
 
 class ShippingAddressForm(forms.Form):
     ship_name = forms.CharField(
@@ -71,6 +73,30 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
+    # Pickup option
+    fulfillment_method = forms.ChoiceField(
+        label="Fulfillment Method",
+        choices=[
+            ("shipping", "Ship to Address"),
+            ("pickup", "Pick Up at Location"),
+        ],
+        initial="shipping",
+        widget=forms.RadioSelect(attrs={
+            "class": "fulfillment-method-radio",
+        }),
+    )
+    
+    pickup_location_id = forms.ModelChoiceField(
+        queryset=PickupLocation.objects.filter(is_active=True),
+        required=False,
+        label="Pickup Location",
+        empty_label="Select a pickup location",
+        widget=forms.Select(attrs={
+            "class": "pickup-location-select",
+            "style": "display: none;",  # Hidden by default, shown when pickup is selected
+        }),
+    )
+
     # -------------------------
     # Validation
     # -------------------------
@@ -91,3 +117,25 @@ class ShippingAddressForm(forms.Form):
             raise forms.ValidationError("Enter a valid Canadian postal code.")
 
         return code
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        fulfillment_method = cleaned_data.get("fulfillment_method")
+        pickup_location_id = cleaned_data.get("pickup_location_id")
+        
+        # If pickup is selected, require pickup location
+        if fulfillment_method == "pickup":
+            if not pickup_location_id:
+                raise forms.ValidationError({
+                    "pickup_location_id": "Please select a pickup location."
+                })
+        
+        # If shipping is selected, validate shipping address fields
+        if fulfillment_method == "shipping":
+            required_fields = ["ship_name", "ship_address1", "ship_city", "ship_province", "ship_postal_code"]
+            for field in required_fields:
+                if not cleaned_data.get(field):
+                    if field not in self.errors:
+                        self.add_error(field, "This field is required for shipping.")
+        
+        return cleaned_data

@@ -5,7 +5,7 @@ import csv
 from django.http import HttpResponse
 from django.utils.html import format_html
 
-from .models import Order, OrderItem
+from .models import Order, OrderItem, PickupLocation
 
 
 # -------------------------
@@ -57,12 +57,13 @@ class OrderItemInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id", "user", "status",
+        "fulfillment_method_display", "pickup_location_display",
         "shipping_carrier", "tracking_number",
         "subtotal", "tax", "shipping", "total",
         "created_at",
     )
     list_display_links = ("id",)
-    list_filter = ("status", "shipping_carrier", "created_at")
+    list_filter = ("status", "is_pickup", "shipping_carrier", "created_at")
     date_hierarchy = "created_at"
     search_fields = ("=id", "user__username", "user__email", "tracking_number")
     inlines = (OrderItemInline,)
@@ -76,7 +77,8 @@ class OrderAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ("Order Info", {"fields": ("user", "status", "shipping_carrier", "tracking_number")}),
-        ("Shipping Address", {"fields": (
+        ("Fulfillment Method", {"fields": ("is_pickup", "pickup_location")}),
+        ("Shipping/Pickup Address", {"fields": (
             "ship_name", "ship_phone",
             "ship_address1", "ship_address2",
             "ship_city", "ship_province", "ship_postal_code", "ship_country",
@@ -86,8 +88,32 @@ class OrderAdmin(admin.ModelAdmin):
         ("Timestamps", {"fields": ("created_at", "updated_at")}),
     )
 
-    @admin.display(description="Shipping full")
+    @admin.display(description="Fulfillment", boolean=True)
+    def fulfillment_method_display(self, obj):
+        return "Pickup" if obj.is_pickup else "Shipping"
+    fulfillment_method_display.short_description = "Method"
+
+    @admin.display(description="Pickup Location")
+    def pickup_location_display(self, obj):
+        if obj.is_pickup and obj.pickup_location:
+            return obj.pickup_location.name
+        return "-"
+
+    @admin.display(description="Shipping/Pickup Address")
     def shipping_full_admin(self, obj):
+        if obj.is_pickup and obj.pickup_location:
+            parts = [
+                f"PICKUP: {obj.pickup_location.name}",
+                obj.pickup_location.address1 or "",
+                obj.pickup_location.address2 or "",
+                " ".join([p for p in [obj.pickup_location.city or "", obj.pickup_location.province or "", obj.pickup_location.postal_code or ""] if p]).strip(),
+                obj.pickup_location.country or "",
+            ]
+            if obj.pickup_location.phone:
+                parts.insert(1, f"Phone: {obj.pickup_location.phone}")
+            lines = [p.strip() for p in parts if p and p.strip()]
+            return format_html("<br>".join(lines)) if lines else "-"
+        
         parts = [
             obj.ship_name or "",
             obj.ship_phone or "",
@@ -146,6 +172,26 @@ def export_orderitems_csv(modeladmin, request, queryset):
     return response
 
 export_orderitems_csv.short_description = "Export selected rows to CSV"
+
+
+@admin.register(PickupLocation)
+class PickupLocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "city", "province", "is_active", "display_order", "created_at")
+    list_filter = ("is_active", "province", "city")
+    search_fields = ("name", "address1", "city", "province", "postal_code")
+    list_editable = ("is_active", "display_order")
+    
+    fieldsets = (
+        ("Location Info", {"fields": ("name", "is_active", "display_order")}),
+        ("Address", {"fields": (
+            "address1", "address2",
+            "city", "province", "postal_code", "country",
+        )}),
+        ("Contact & Instructions", {"fields": ("phone", "instructions")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at")}),
+    )
+    
+    readonly_fields = ("created_at", "updated_at")
 
 
 # ✅ One filter instead of two separate "By is ..."

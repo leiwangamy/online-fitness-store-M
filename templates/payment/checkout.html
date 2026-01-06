@@ -13,6 +13,62 @@
   .warning { color: red; font-weight: bold; margin: 15px 0; }
   .buttons { margin-top: 20px; }
   .buttons a, .buttons button { margin-right: 15px; padding: 8px 16px; font-size: 1rem; }
+  
+  /* Fulfillment method styles */
+  .fulfillment-method {
+    margin-bottom: 25px;
+    padding: 15px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  .fulfillment-method-radio {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+  }
+  .fulfillment-method-radio li {
+    margin: 8px 0;
+  }
+  .fulfillment-method-radio input[type="radio"] {
+    margin-right: 8px;
+  }
+  .fulfillment-method-radio label {
+    font-weight: normal;
+    cursor: pointer;
+  }
+  
+  /* Pickup location styles */
+  .pickup-location-select {
+    margin-top: 10px;
+    padding: 8px;
+    width: 100%;
+    max-width: 500px;
+    font-size: 14px;
+  }
+  .pickup-location-info {
+    margin-top: 10px;
+    padding: 10px;
+    background: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    border-radius: 4px;
+  }
+  .pickup-location-info h4 {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+  .pickup-location-info p {
+    margin: 4px 0;
+    line-height: 1.6;
+  }
+  
+  /* Shipping form visibility */
+  .shipping-form-section {
+    margin-top: 20px;
+  }
+  .pickup-section {
+    margin-top: 20px;
+  }
 </style>
 {% endblock %}
 
@@ -27,40 +83,106 @@
 <form method="post">
   {% csrf_token %}
 
-  <h2>Confirm Shipping Address</h2>
-
-  <div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
-    <h3 style="margin-top: 0; margin-bottom: 10px;">Default Shipping Address</h3>
-    {% if default_address.ship_address1 or default_address.ship_city %}
-      <div style="line-height: 1.8;">
-        {% if default_address.ship_name %}<strong>{{ default_address.ship_name }}</strong><br>{% endif %}
-        {% if default_address.ship_phone %}Phone: {{ default_address.ship_phone }}<br>{% endif %}
-        {% if default_address.ship_address1 %}{{ default_address.ship_address1 }}<br>{% endif %}
-        {% if default_address.ship_address2 %}{{ default_address.ship_address2 }}<br>{% endif %}
-        {% if default_address.ship_city or default_address.ship_province or default_address.ship_postal_code %}
-          {% if default_address.ship_city %}{{ default_address.ship_city }}{% endif %}
-          {% if default_address.ship_province %}, {{ default_address.ship_province }}{% endif %}
-          {% if default_address.ship_postal_code %} {{ default_address.ship_postal_code }}{% endif %}
-          <br>
-        {% endif %}
-        {% if default_address.ship_country %}{{ default_address.ship_country }}{% endif %}
-      </div>
-    {% else %}
-      <p style="color: #666; font-style: italic;">No default address saved. Please fill in the form below or <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}">edit your profile address</a>.</p>
+  <h2>Fulfillment Method</h2>
+  
+  <div class="fulfillment-method">
+    <label><strong>How would you like to receive your order?</strong></label>
+    {{ form.fulfillment_method }}
+    {% if form.fulfillment_method.errors %}
+      <div style="color: red; margin-top: 5px;">{{ form.fulfillment_method.errors }}</div>
     {% endif %}
-    <div style="margin-top: 15px;">
-      <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}" style="padding: 6px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; font-size: 14px;">
-        Edit Address
-      </a>
+  </div>
+
+  <!-- Shipping Address Section -->
+  <div class="shipping-form-section" id="shipping-section">
+    <h3>Shipping Address</h3>
+    
+    <div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
+      <h4 style="margin-top: 0; margin-bottom: 10px;">Default Shipping Address</h4>
+      {% if default_address.ship_address1 or default_address.ship_city %}
+        <div style="line-height: 1.8;">
+          {% if default_address.ship_name %}<strong>{{ default_address.ship_name }}</strong><br>{% endif %}
+          {% if default_address.ship_phone %}Phone: {{ default_address.ship_phone }}<br>{% endif %}
+          {% if default_address.ship_address1 %}{{ default_address.ship_address1 }}<br>{% endif %}
+          {% if default_address.ship_address2 %}{{ default_address.ship_address2 }}<br>{% endif %}
+          {% if default_address.ship_city or default_address.ship_province or default_address.ship_postal_code %}
+            {% if default_address.ship_city %}{{ default_address.ship_city }}{% endif %}
+            {% if default_address.ship_province %}, {{ default_address.ship_province }}{% endif %}
+            {% if default_address.ship_postal_code %} {{ default_address.ship_postal_code }}{% endif %}
+            <br>
+          {% endif %}
+          {% if default_address.ship_country %}{{ default_address.ship_country }}{% endif %}
+        </div>
+      {% else %}
+        <p style="color: #666; font-style: italic;">No default address saved. Please fill in the form below or <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}">edit your profile address</a>.</p>
+      {% endif %}
+      <div style="margin-top: 15px;">
+        <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}" style="padding: 6px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; font-size: 14px;">
+          Edit Address
+        </a>
+      </div>
+    </div>
+
+    <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">The form below is pre-filled with your default address. You can modify it if needed for this order.</p>
+
+    <div id="shipping-form-fields">
+      <p>
+        <label for="{{ form.ship_name.id_for_label }}">{{ form.ship_name.label }}:</label>
+        {{ form.ship_name }}
+        {% if form.ship_name.errors %}<span style="color: red;">{{ form.ship_name.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_phone.id_for_label }}">{{ form.ship_phone.label }}:</label>
+        {{ form.ship_phone }}
+        {% if form.ship_phone.errors %}<span style="color: red;">{{ form.ship_phone.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_address1.id_for_label }}">{{ form.ship_address1.label }}:</label>
+        {{ form.ship_address1 }}
+        {% if form.ship_address1.errors %}<span style="color: red;">{{ form.ship_address1.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_address2.id_for_label }}">{{ form.ship_address2.label }}:</label>
+        {{ form.ship_address2 }}
+        {% if form.ship_address2.errors %}<span style="color: red;">{{ form.ship_address2.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_city.id_for_label }}">{{ form.ship_city.label }}:</label>
+        {{ form.ship_city }}
+        {% if form.ship_city.errors %}<span style="color: red;">{{ form.ship_city.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_province.id_for_label }}">{{ form.ship_province.label }}:</label>
+        {{ form.ship_province }}
+        {% if form.ship_province.errors %}<span style="color: red;">{{ form.ship_province.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_postal_code.id_for_label }}">{{ form.ship_postal_code.label }}:</label>
+        {{ form.ship_postal_code }}
+        {% if form.ship_postal_code.errors %}<span style="color: red;">{{ form.ship_postal_code.errors }}</span>{% endif %}
+      </p>
+      <p>
+        <label for="{{ form.ship_country.id_for_label }}">{{ form.ship_country.label }}:</label>
+        {{ form.ship_country }}
+        {% if form.ship_country.errors %}<span style="color: red;">{{ form.ship_country.errors }}</span>{% endif %}
+      </p>
     </div>
   </div>
 
-  <hr>
-
-  <h3>Shipping Address Form</h3>
-  <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">The form below is pre-filled with your default address. You can modify it if needed for this order.</p>
-
-  {{ form.as_p }}
+  <!-- Pickup Location Section -->
+  <div class="pickup-section" id="pickup-section" style="display: none;">
+    <h3>Select Pickup Location</h3>
+    {% if pickup_locations %}
+      <p>
+        <label for="{{ form.pickup_location_id.id_for_label }}">{{ form.pickup_location_id.label }}:</label>
+        {{ form.pickup_location_id }}
+        {% if form.pickup_location_id.errors %}<span style="color: red;">{{ form.pickup_location_id.errors }}</span>{% endif %}
+      </p>
+      <div id="pickup-location-details" style="display: none;" class="pickup-location-info"></div>
+    {% else %}
+      <p style="color: #666; font-style: italic;">No pickup locations available at this time. Please select shipping instead.</p>
+    {% endif %}
+  </div>
 
   {% if insufficient_items %}
     <div class="warning">
@@ -109,6 +231,89 @@
   </div>
 
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const fulfillmentRadios = document.querySelectorAll('input[name="fulfillment_method"]');
+  const shippingSection = document.getElementById('shipping-section');
+  const pickupSection = document.getElementById('pickup-section');
+  const pickupSelect = document.getElementById('{{ form.pickup_location_id.id_for_label }}');
+  const pickupDetails = document.getElementById('pickup-location-details');
+  
+  // Pickup locations data for JavaScript
+  const pickupLocations = {
+    {% for location in pickup_locations %}
+    {{ location.id }}: {
+      name: "{{ location.name }}",
+      address1: "{{ location.address1 }}",
+      address2: "{{ location.address2|default:'' }}",
+      city: "{{ location.city }}",
+      province: "{{ location.province }}",
+      postal_code: "{{ location.postal_code }}",
+      country: "{{ location.country }}",
+      phone: "{{ location.phone|default:'' }}",
+      instructions: "{{ location.instructions|default:'' }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+  };
+  
+  function toggleFulfillmentSections() {
+    const selectedMethod = document.querySelector('input[name="fulfillment_method"]:checked');
+    if (selectedMethod && selectedMethod.value === 'pickup') {
+      shippingSection.style.display = 'none';
+      pickupSection.style.display = 'block';
+      // Make shipping fields not required when pickup is selected
+      const shippingFields = shippingSection.querySelectorAll('input[required], select[required]');
+      shippingFields.forEach(field => field.removeAttribute('required'));
+    } else {
+      shippingSection.style.display = 'block';
+      pickupSection.style.display = 'none';
+      // Make shipping fields required when shipping is selected
+      const requiredFields = ['ship_name', 'ship_address1', 'ship_city', 'ship_province', 'ship_postal_code'];
+      requiredFields.forEach(fieldName => {
+        const field = document.getElementById('id_' + fieldName);
+        if (field) field.setAttribute('required', 'required');
+      });
+    }
+  }
+  
+  function updatePickupDetails() {
+    const selectedId = pickupSelect.value;
+    if (selectedId && pickupLocations[selectedId]) {
+      const loc = pickupLocations[selectedId];
+      let html = '<h4>' + loc.name + '</h4>';
+      html += '<p><strong>Address:</strong><br>';
+      html += loc.address1;
+      if (loc.address2) html += '<br>' + loc.address2;
+      html += '<br>' + loc.city + ', ' + loc.province + ' ' + loc.postal_code;
+      html += '<br>' + loc.country + '</p>';
+      if (loc.phone) html += '<p><strong>Phone:</strong> ' + loc.phone + '</p>';
+      if (loc.instructions) html += '<p><strong>Instructions:</strong> ' + loc.instructions + '</p>';
+      pickupDetails.innerHTML = html;
+      pickupDetails.style.display = 'block';
+    } else {
+      pickupDetails.style.display = 'none';
+    }
+  }
+  
+  // Initial setup
+  toggleFulfillmentSections();
+  
+  // Listen for fulfillment method changes
+  fulfillmentRadios.forEach(radio => {
+    radio.addEventListener('change', toggleFulfillmentSections);
+  });
+  
+  // Listen for pickup location selection
+  if (pickupSelect) {
+    pickupSelect.addEventListener('change', updatePickupDetails);
+    // Update on page load if a location is already selected
+    if (pickupSelect.value) {
+      updatePickupDetails();
+    }
+  }
+});
+</script>
 
 {% endif %}
 {% endblock %}

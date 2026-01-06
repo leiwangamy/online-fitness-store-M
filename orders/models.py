@@ -16,6 +16,46 @@ def default_expiry():
     return timezone.now() + timedelta(days=30)
 
 
+class PickupLocation(models.Model):
+    """Pickup locations that customers can select during checkout."""
+    name = models.CharField(max_length=200, help_text="Location name (e.g., 'Main Store', 'Downtown Branch')")
+    address1 = models.CharField(max_length=255, help_text="Street address")
+    address2 = models.CharField(max_length=255, blank=True, default="", help_text="Apartment, suite, etc. (optional)")
+    city = models.CharField(max_length=100)
+    province = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=20)
+    country = models.CharField(max_length=100, default="Canada")
+    phone = models.CharField(max_length=30, blank=True, default="", help_text="Contact phone for this location")
+    instructions = models.TextField(blank=True, default="", help_text="Special instructions for customers (e.g., 'Pick up at front desk', 'Hours: Mon-Fri 9am-5pm')")
+    is_active = models.BooleanField(default=True, help_text="Only active locations are shown to customers")
+    display_order = models.PositiveIntegerField(default=0, help_text="Order in which locations appear (lower numbers first)")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', 'name']
+        verbose_name = "Pickup Location"
+        verbose_name_plural = "Pickup Locations"
+    
+    def __str__(self):
+        return self.name
+    
+    def full_address(self) -> str:
+        """Return formatted full address."""
+        lines = []
+        if self.address1:
+            lines.append(self.address1)
+        if self.address2:
+            lines.append(self.address2)
+        city_line = " ".join([p for p in [self.city, self.province, self.postal_code] if p]).strip()
+        if city_line:
+            lines.append(city_line)
+        if self.country:
+            lines.append(self.country)
+        return "\n".join(lines)
+
+
 class Order(models.Model):
     STATUS_PENDING = "pending"
     STATUS_PAID = "paid"
@@ -63,6 +103,17 @@ class Order(models.Model):
     tracking_number = models.CharField(max_length=100, blank=True, default="")
     shipping_carrier = models.CharField(max_length=20, choices=CARRIER_CHOICES, blank=True, default="")
 
+    # Pickup option
+    is_pickup = models.BooleanField(default=False, help_text="If True, customer selected pickup instead of shipping")
+    pickup_location = models.ForeignKey(
+        'PickupLocation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+        help_text="Selected pickup location (only set if is_pickup=True)"
+    )
+
     # Shipping address snapshot (store on the order)
     ship_name = models.CharField(max_length=200, blank=True, default="")
     ship_phone = models.CharField(max_length=30, blank=True, default="")
@@ -82,6 +133,10 @@ class Order(models.Model):
         return f"Order #{self.pk} ({self.user})"
 
     def shipping_full(self) -> str:
+        """Return shipping address or pickup location address."""
+        if self.is_pickup and self.pickup_location:
+            return f"PICKUP: {self.pickup_location.name}\n{self.pickup_location.full_address()}"
+        
         lines = []
         if self.ship_name:
             lines.append(self.ship_name)
@@ -103,7 +158,7 @@ class Order(models.Model):
 
         return "\n".join(lines)
 
-    shipping_full.short_description = "Shipping Address"  # admin label
+    shipping_full.short_description = "Shipping/Pickup Address"  # admin label
 
     def lock_shipping_if_fulfillment_started(self) -> bool:
         """

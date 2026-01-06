@@ -20,7 +20,7 @@ except Exception:
     from members.models import Product
 
 from cart.models import CartItem
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, PickupLocation
 from orders.services import create_downloads_and_email
 from products.inventory import adjust_inventory, log_purchase
 
@@ -84,11 +84,16 @@ def _profile_initial(user) -> dict:
     }
 
 
-def _calc_shipping(items: list, subtotal: Decimal) -> tuple[Decimal, str]:
+def _calc_shipping(items: list, subtotal: Decimal, is_pickup: bool = False) -> tuple[Decimal, str]:
     """
     Shipping only applies if there is at least one physical item.
     Physical item = not digital and not service.
+    Pickup orders have no shipping fee.
     """
+    # Pickup orders have no shipping
+    if is_pickup:
+        return Decimal("0.00"), "No shipping (pickup order)"
+    
     has_physical = any(
         (not getattr(i["product"], "is_digital", False)) and (not getattr(i["product"], "is_service", False))
         for i in items
@@ -142,12 +147,17 @@ def checkout(request):
 
     subtotal = subtotal.quantize(Decimal("0.01"))
     tax = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
-    shipping, shipping_label = _calc_shipping(items, subtotal)
+    
+    # Get pickup locations for template
+    pickup_locations = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
+    
+    # For GET request, calculate shipping with default (not pickup)
+    shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=False)
     total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
 
     initial = _profile_initial(request.user)
 
-    # ---------------- POST: place order ----------------
+    # ---------------- POST: place order ---------------- 
     if request.method == "POST":
         if insufficient_items:
             messages.error(request, "Some items are out of stock. Please adjust your cart.")
@@ -155,6 +165,11 @@ def checkout(request):
 
         form = ShippingAddressForm(request.POST)
         if not form.is_valid():
+            # Recalculate shipping based on form data (even if invalid, to show correct preview)
+            is_pickup = form.data.get("fulfillment_method") == "pickup"
+            shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=is_pickup)
+            total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+            
             return render(
                 request,
                 "payment/checkout.html",
@@ -168,10 +183,43 @@ def checkout(request):
                     "total": total,
                     "insufficient_items": insufficient_items,
                     "form": form,
+                    "pickup_locations": pickup_locations,
+                    "default_address": initial,
                 },
             )
 
-        shipping_data = form.cleaned_data
+        form_data = form.cleaned_data
+        fulfillment_method = form_data.get("fulfillment_method", "shipping")
+        is_pickup = fulfillment_method == "pickup"
+        pickup_location = form_data.get("pickup_location_id") if is_pickup else None
+        
+        # Recalculate shipping based on pickup selection
+        shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=is_pickup)
+        total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+        
+        # Prepare shipping data - if pickup, use pickup location address
+        if is_pickup and pickup_location:
+            shipping_data = {
+                "ship_name": request.user.get_full_name() or request.user.get_username(),
+                "ship_phone": pickup_location.phone or "",
+                "ship_address1": pickup_location.address1,
+                "ship_address2": pickup_location.address2 or "",
+                "ship_city": pickup_location.city,
+                "ship_province": pickup_location.province,
+                "ship_postal_code": pickup_location.postal_code,
+                "ship_country": pickup_location.country,
+            }
+        else:
+            shipping_data = {
+                "ship_name": form_data.get("ship_name", ""),
+                "ship_phone": form_data.get("ship_phone", ""),
+                "ship_address1": form_data.get("ship_address1", ""),
+                "ship_address2": form_data.get("ship_address2", ""),
+                "ship_city": form_data.get("ship_city", ""),
+                "ship_province": form_data.get("ship_province", ""),
+                "ship_postal_code": form_data.get("ship_postal_code", ""),
+                "ship_country": form_data.get("ship_country", "Canada"),
+            }
 
         with transaction.atomic():
             # Lock products for safer inventory updates
@@ -195,6 +243,8 @@ def checkout(request):
                 tax=tax,
                 shipping=shipping,
                 total=total,
+                is_pickup=is_pickup,
+                pickup_location=pickup_location,
                 **shipping_data,  # works if your Order has these fields
             )
 
@@ -298,6 +348,7 @@ def checkout(request):
             "form": form,
             "profile": profile,  # Pass profile to display default address
             "default_address": initial,  # Pass initial values for display
+            "pickup_locations": pickup_locations,  # Pass pickup locations for template
         },
     )
 
