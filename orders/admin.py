@@ -90,40 +90,56 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.display(description="Fulfillment", boolean=True)
     def fulfillment_method_display(self, obj):
-        return "Pickup" if obj.is_pickup else "Shipping"
-    fulfillment_method_display.short_description = "Method"
+        try:
+            return "Pickup" if getattr(obj, 'is_pickup', False) else "Shipping"
+        except Exception:
+            return "Shipping"
 
     @admin.display(description="Pickup Location")
     def pickup_location_display(self, obj):
-        if obj.is_pickup and obj.pickup_location:
-            return obj.pickup_location.name
+        try:
+            if getattr(obj, 'is_pickup', False) and hasattr(obj, 'pickup_location') and obj.pickup_location:
+                return str(obj.pickup_location.name)
+        except Exception:
+            pass
         return "-"
 
     @admin.display(description="Shipping/Pickup Address")
     def shipping_full_admin(self, obj):
-        if obj.is_pickup and obj.pickup_location:
+        try:
+            is_pickup = getattr(obj, 'is_pickup', False)
+            if is_pickup and hasattr(obj, 'pickup_location') and obj.pickup_location:
+                try:
+                    parts = [
+                        f"PICKUP: {obj.pickup_location.name}",
+                        obj.pickup_location.address1 or "",
+                        obj.pickup_location.address2 or "",
+                        " ".join([p for p in [obj.pickup_location.city or "", obj.pickup_location.province or "", obj.pickup_location.postal_code or ""] if p]).strip(),
+                        obj.pickup_location.country or "",
+                    ]
+                    if obj.pickup_location.phone:
+                        parts.insert(1, f"Phone: {obj.pickup_location.phone}")
+                    lines = [p.strip() for p in parts if p and p.strip()]
+                    return format_html("<br>".join(lines)) if lines else "-"
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        
+        # Fallback to shipping address
+        try:
             parts = [
-                f"PICKUP: {obj.pickup_location.name}",
-                obj.pickup_location.address1 or "",
-                obj.pickup_location.address2 or "",
-                " ".join([p for p in [obj.pickup_location.city or "", obj.pickup_location.province or "", obj.pickup_location.postal_code or ""] if p]).strip(),
-                obj.pickup_location.country or "",
+                getattr(obj, 'ship_name', '') or "",
+                getattr(obj, 'ship_phone', '') or "",
+                getattr(obj, 'ship_address1', '') or "",
+                getattr(obj, 'ship_address2', '') or "",
+                " ".join([p for p in [getattr(obj, 'ship_city', '') or "", getattr(obj, 'ship_province', '') or "", getattr(obj, 'ship_postal_code', '') or ""] if p]).strip(),
+                getattr(obj, 'ship_country', '') or "",
             ]
-            if obj.pickup_location.phone:
-                parts.insert(1, f"Phone: {obj.pickup_location.phone}")
             lines = [p.strip() for p in parts if p and p.strip()]
             return format_html("<br>".join(lines)) if lines else "-"
-        
-        parts = [
-            obj.ship_name or "",
-            obj.ship_phone or "",
-            obj.ship_address1 or "",
-            obj.ship_address2 or "",
-            " ".join([p for p in [obj.ship_city or "", obj.ship_province or "", obj.ship_postal_code or ""] if p]).strip(),
-            obj.ship_country or "",
-        ]
-        lines = [p.strip() for p in parts if p and p.strip()]
-        return format_html("<br>".join(lines)) if lines else "-"
+        except Exception:
+            return "-"
 
 
 # -------------------------

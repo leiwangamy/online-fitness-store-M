@@ -199,9 +199,20 @@ def checkout(request):
             )
 
         form_data = form.cleaned_data
-        fulfillment_method = form_data.get("fulfillment_method", "shipping")
+        
+        # Get fulfillment_method from cleaned_data, fallback to raw POST data if not available
+        fulfillment_method = form_data.get("fulfillment_method") or request.POST.get("fulfillment_method", "shipping")
         is_pickup = fulfillment_method == "pickup"
-        pickup_location = form_data.get("pickup_location_id") if is_pickup else None
+        
+        # Get pickup_location_id from cleaned_data or raw POST data
+        pickup_location_id = form_data.get("pickup_location_id") or request.POST.get("pickup_location_id")
+        if pickup_location_id and is_pickup:
+            try:
+                pickup_location = PickupLocation.objects.get(pk=pickup_location_id, is_active=True)
+            except (PickupLocation.DoesNotExist, ValueError, TypeError):
+                pickup_location = None
+        else:
+            pickup_location = None
         
         # Recalculate shipping based on pickup selection
         shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=is_pickup)
