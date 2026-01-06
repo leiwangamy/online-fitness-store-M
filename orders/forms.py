@@ -87,7 +87,7 @@ class ShippingAddressForm(forms.Form):
     )
     
     pickup_location_id = forms.ModelChoiceField(
-        queryset=PickupLocation.objects.filter(is_active=True),
+        queryset=PickupLocation.objects.none(),  # Will be set in __init__
         required=False,
         label="Pickup Location",
         empty_label="Select a pickup location",
@@ -96,6 +96,11 @@ class ShippingAddressForm(forms.Form):
             "style": "display: none;",  # Hidden by default, shown when pickup is selected
         }),
     )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Update queryset to get current active pickup locations
+        self.fields['pickup_location_id'].queryset = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
 
     # -------------------------
     # Validation

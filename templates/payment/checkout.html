@@ -87,7 +87,14 @@
   
   <div class="fulfillment-method">
     <label><strong>How would you like to receive your order?</strong></label>
-    {{ form.fulfillment_method }}
+    <ul class="fulfillment-method-radio">
+      {% for choice in form.fulfillment_method %}
+        <li>
+          {{ choice.tag }}
+          <label for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+        </li>
+      {% endfor %}
+    </ul>
     {% if form.fulfillment_method.errors %}
       <div style="color: red; margin-top: 5px;">{{ form.fulfillment_method.errors }}</div>
     {% endif %}
