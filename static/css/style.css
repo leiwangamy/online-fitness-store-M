@@ -4,21 +4,44 @@
     height: auto;
     object-fit: contain;
     display: block;
+    border: none !important;
+    outline: none !important;
 }
 
 .product-card img {
     width: 100%;
     max-height: 220px;
     object-fit: contain;
+    border: none !important;
+    outline: none !important;
 }
 
 .product-image {
     width: 200px;
     height: 200px;
     object-fit: cover;  /* fills box */
+    border: none !important;
+    outline: none !important;
 }
 
 img {
     max-width: 100%;
     height: auto;
+}
+
+/* Remove blue borders/outlines from product image links */
+a.product-image-link,
+a.product-image-link:focus,
+a.product-image-link:active,
+a.product-image-link:visited {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    text-decoration: none;
+}
+
+a.product-image-link img {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }

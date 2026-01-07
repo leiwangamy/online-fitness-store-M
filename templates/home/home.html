@@ -106,13 +106,37 @@
             border-radius: 4px;
             cursor: pointer;
             transition: opacity 0.2s;
+            border: none !important;
+            outline: none !important;
         }
         
         .product-img:hover {
             opacity: 0.8;
         }
+
+        /* Remove blue border/outline from product image links */
+        .product-card .product-image-link {
+            text-decoration: none;
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+
+        .product-card .product-image-link:focus,
+        .product-card .product-image-link:active,
+        .product-card .product-image-link:visited {
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .product-card .product-image-link img {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
         
-        .product-card a {
+        .product-card .view-details-link {
             display: inline-block;
             margin-top: 10px;
             padding: 6px 12px;
@@ -123,7 +147,7 @@
             font-size: 14px;
         }
         
-        .product-card a:hover {
+        .product-card .view-details-link:hover {
             background: #0052a3;
         }
 
@@ -289,7 +313,7 @@
             <div class="products-container">
                 {% for product in page_obj %}
                     <div class="product-card">
-                        <a href="{% url 'products:detail' product.pk %}" style="text-decoration: none; display: block;">
+                        <a href="{% url 'products:detail' product.pk %}" class="product-image-link" style="text-decoration: none; display: block; border: none; outline: none;">
                             {% if product.main_image_url %}
                                 <img src="{{ product.main_image_url }}" class="product-img" alt="{{ product.name }}" onerror="console.error('Image failed to load:', this.src); this.src='/static/no-image.png'; this.onerror=null;">
                             {% else %}
@@ -299,7 +323,7 @@
 
                         <h3>{{ product.name }}</h3>
                         <p>${{ product.price }}</p>
-                        <a href="{% url 'products:detail' product.pk %}">View Details</a>
+                        <a href="{% url 'products:detail' product.pk %}" class="view-details-link">View Details</a>
                     </div>
                 {% endfor %}
             </div>

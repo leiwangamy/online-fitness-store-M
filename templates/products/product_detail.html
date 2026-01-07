@@ -135,6 +135,7 @@
 
 {% block content %}
 
+<div id="page-top"></div>
 
 <header>
     <h1>My Fitness Club</h1>
@@ -142,7 +143,7 @@
     <hr>
 </header>
 
-<div class="page-wrapper">
+<div class="page-wrapper" id="product-content">
 
     <!-- 1. Product name -->
     <h2>{{ product.name }}</h2>
@@ -342,6 +343,20 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Scroll to product content on page load (skip header/nav)
+    // This prevents the page from starting at the very top
+    const productContent = document.getElementById('product-content');
+    if (productContent) {
+        // Small delay to ensure page is fully rendered
+        setTimeout(function() {
+            productContent.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // If smooth scroll doesn't work, use instant scroll as fallback
+            if (window.scrollY === 0) {
+                window.scrollTo(0, productContent.offsetTop - 20);
+            }
+        }, 100);
+    }
+
     const mainMedia = document.getElementById('main-media');
     const thumbs = Array.from(document.querySelectorAll('.slide-thumb'));
     const arrowLeft = document.getElementById('arrow-left');
