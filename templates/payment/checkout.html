@@ -153,23 +153,28 @@
     <h3>Shipping Address</h3>
     
     <div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 20px;">
-      <h4 style="margin-top: 0; margin-bottom: 10px;">Default Shipping Address</h4>
-      {% if default_address.ship_address1 or default_address.ship_city %}
+      <h4 style="margin-top: 0; margin-bottom: 10px;">Shipping Address</h4>
+      {% if default_address.address1 or default_address.city %}
         <div style="line-height: 1.8;">
-          {% if default_address.ship_name %}<strong>{{ default_address.ship_name }}</strong><br>{% endif %}
-          {% if default_address.ship_phone %}Phone: {{ default_address.ship_phone }}<br>{% endif %}
-          {% if default_address.ship_address1 %}{{ default_address.ship_address1 }}<br>{% endif %}
-          {% if default_address.ship_address2 %}{{ default_address.ship_address2 }}<br>{% endif %}
-          {% if default_address.ship_city or default_address.ship_province or default_address.ship_postal_code %}
-            {% if default_address.ship_city %}{{ default_address.ship_city }}{% endif %}
-            {% if default_address.ship_province %}, {{ default_address.ship_province }}{% endif %}
-            {% if default_address.ship_postal_code %} {{ default_address.ship_postal_code }}{% endif %}
+          {% if default_address.first_name or default_address.last_name %}
+            <strong>
+              {% if default_address.first_name %}{{ default_address.first_name }}{% endif %}
+              {% if default_address.last_name %} {{ default_address.last_name }}{% endif %}
+            </strong><br>
+          {% endif %}
+          {% if default_address.phone %}Phone: {{ default_address.phone }}<br>{% endif %}
+          {% if default_address.address1 %}{{ default_address.address1 }}<br>{% endif %}
+          {% if default_address.address2 %}{{ default_address.address2 }}<br>{% endif %}
+          {% if default_address.city or default_address.province or default_address.postal_code %}
+            {% if default_address.city %}{{ default_address.city }}{% endif %}
+            {% if default_address.province %}, {{ default_address.province }}{% endif %}
+            {% if default_address.postal_code %} {{ default_address.postal_code }}{% endif %}
             <br>
           {% endif %}
-          {% if default_address.ship_country %}{{ default_address.ship_country }}{% endif %}
+          {% if default_address.country %}{{ default_address.country }}{% endif %}
         </div>
       {% else %}
-        <p style="color: #666; font-style: italic;">No default address saved. Please fill in the form below or <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}">edit your profile address</a>.</p>
+        <p style="color: #666; font-style: italic;">No default address saved. Please <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}">add your address</a>.</p>
       {% endif %}
       <div style="margin-top: 15px;">
         <a href="{% url 'profiles:address_edit' %}?next={{ request.path }}" style="padding: 6px 12px; background: #0066cc; color: white; text-decoration: none; border-radius: 4px; font-size: 14px;">
@@ -178,50 +183,68 @@
       </div>
     </div>
 
-    <p style="color: #666; font-size: 0.9rem; margin-bottom: 15px;">The form below is pre-filled with your default address. You can modify it if needed for this order.</p>
-
-    <div id="shipping-form-fields">
-      <p>
-        <label for="{{ form.ship_name.id_for_label }}">{{ form.ship_name.label }}:</label>
-        {{ form.ship_name }}
-        {% if form.ship_name.errors %}<span style="color: red;">{{ form.ship_name.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_phone.id_for_label }}">{{ form.ship_phone.label }}:</label>
-        {{ form.ship_phone }}
-        {% if form.ship_phone.errors %}<span style="color: red;">{{ form.ship_phone.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_address1.id_for_label }}">{{ form.ship_address1.label }}:</label>
-        {{ form.ship_address1 }}
-        {% if form.ship_address1.errors %}<span style="color: red;">{{ form.ship_address1.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_address2.id_for_label }}">{{ form.ship_address2.label }}:</label>
-        {{ form.ship_address2 }}
-        {% if form.ship_address2.errors %}<span style="color: red;">{{ form.ship_address2.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_city.id_for_label }}">{{ form.ship_city.label }}:</label>
-        {{ form.ship_city }}
-        {% if form.ship_city.errors %}<span style="color: red;">{{ form.ship_city.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_province.id_for_label }}">{{ form.ship_province.label }}:</label>
-        {{ form.ship_province }}
-        {% if form.ship_province.errors %}<span style="color: red;">{{ form.ship_province.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_postal_code.id_for_label }}">{{ form.ship_postal_code.label }}:</label>
-        {{ form.ship_postal_code }}
-        {% if form.ship_postal_code.errors %}<span style="color: red;">{{ form.ship_postal_code.errors }}</span>{% endif %}
-      </p>
-      <p>
-        <label for="{{ form.ship_country.id_for_label }}">{{ form.ship_country.label }}:</label>
-        {{ form.ship_country }}
-        {% if form.ship_country.errors %}<span style="color: red;">{{ form.ship_country.errors }}</span>{% endif %}
-      </p>
-    </div>
+    {# Hidden fields with default address values - only show form fields if there are errors #}
+    {% if form.errors %}
+      <div id="shipping-form-fields" style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">
+        <p style="color: #856404; font-weight: bold; margin-bottom: 10px;">Please correct the following errors:</p>
+        <p>
+          <label for="{{ form.first_name.id_for_label }}">{{ form.first_name.label }}:</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<span style="color: red;">{{ form.first_name.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.last_name.id_for_label }}">{{ form.last_name.label }}:</label>
+          {{ form.last_name }}
+          {% if form.last_name.errors %}<span style="color: red;">{{ form.last_name.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.phone.id_for_label }}">{{ form.phone.label }}:</label>
+          {{ form.phone }}
+          {% if form.phone.errors %}<span style="color: red;">{{ form.phone.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.address1.id_for_label }}">{{ form.address1.label }}:</label>
+          {{ form.address1 }}
+          {% if form.address1.errors %}<span style="color: red;">{{ form.address1.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.address2.id_for_label }}">{{ form.address2.label }}:</label>
+          {{ form.address2 }}
+          {% if form.address2.errors %}<span style="color: red;">{{ form.address2.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.city.id_for_label }}">{{ form.city.label }}:</label>
+          {{ form.city }}
+          {% if form.city.errors %}<span style="color: red;">{{ form.city.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.province.id_for_label }}">{{ form.province.label }}:</label>
+          {{ form.province }}
+          {% if form.province.errors %}<span style="color: red;">{{ form.province.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.postal_code.id_for_label }}">{{ form.postal_code.label }}:</label>
+          {{ form.postal_code }}
+          {% if form.postal_code.errors %}<span style="color: red;">{{ form.postal_code.errors }}</span>{% endif %}
+        </p>
+        <p>
+          <label for="{{ form.country.id_for_label }}">{{ form.country.label }}:</label>
+          {{ form.country }}
+          {% if form.country.errors %}<span style="color: red;">{{ form.country.errors }}</span>{% endif %}
+        </p>
+      </div>
+    {% else %}
+      {# Hidden fields with default values #}
+      <input type="hidden" name="first_name" value="{{ default_address.first_name|default:'' }}">
+      <input type="hidden" name="last_name" value="{{ default_address.last_name|default:'' }}">
+      <input type="hidden" name="phone" value="{{ default_address.phone|default:'' }}">
+      <input type="hidden" name="address1" value="{{ default_address.address1|default:'' }}">
+      <input type="hidden" name="address2" value="{{ default_address.address2|default:'' }}">
+      <input type="hidden" name="city" value="{{ default_address.city|default:'' }}">
+      <input type="hidden" name="province" value="{{ default_address.province|default:'' }}">
+      <input type="hidden" name="postal_code" value="{{ default_address.postal_code|default:'' }}">
+      <input type="hidden" name="country" value="{{ default_address.country|default:'Canada' }}">
+    {% endif %}
   </div>
 
   <!-- Pickup Location Section -->
@@ -378,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (shippingSection) shippingSection.style.display = 'block';
       if (pickupSection) pickupSection.style.display = 'none';
       // Make shipping fields required when shipping is selected
-      const requiredFields = ['ship_name', 'ship_address1', 'ship_city', 'ship_province', 'ship_postal_code'];
+      const requiredFields = ['first_name', 'last_name', 'address1', 'city', 'province', 'postal_code'];
       requiredFields.forEach(fieldName => {
         const field = document.getElementById('id_' + fieldName);
         if (field) field.setAttribute('required', 'required');

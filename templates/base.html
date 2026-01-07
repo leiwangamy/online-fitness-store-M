@@ -376,9 +376,8 @@
             <button type="submit" class="logout-button-compact">Logout</button>
           </form>
         {% else %}
-          <a href="{% url 'account_login' %}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px;">Login</a>
-          <span style="color: #999; margin: 0 3px;">|</span>
-          <a href="{% url 'account_signup' %}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px;">Sign Up</a>
+          <a href="{% url 'account_login' %}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px; display: block; margin-bottom: 3px;">Login</a>
+          <a href="{% url 'account_signup' %}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px; display: block;">Sign Up</a>
         {% endif %}
       </div>
     </nav>
@@ -421,6 +420,8 @@
       const hiddenMessages = [
         "Successfully signed in",
         "signed out",
+        "logged out",
+        "You have been logged out",
         "You have confirmed"
       ];
 

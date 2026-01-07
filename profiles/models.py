@@ -12,6 +12,8 @@ class Profile(models.Model):
         related_name="profile",   # can use request.user.profile
     )
 
+    first_name = models.CharField(max_length=100, blank=True, help_text="First name")
+    last_name = models.CharField(max_length=100, blank=True, help_text="Last name")
     phone = models.CharField(max_length=30, blank=True)
 
     address1 = models.CharField(max_length=255, blank=True)

@@ -5,15 +5,23 @@ from .models import PickupLocation
 
 
 class ShippingAddressForm(forms.Form):
-    ship_name = forms.CharField(
-        label="Full name",
+    first_name = forms.CharField(
+        label="First name",
         max_length=100,
         widget=forms.TextInput(attrs={
-            "autocomplete": "name",
+            "autocomplete": "given-name",
         }),
     )
 
-    ship_phone = forms.CharField(
+    last_name = forms.CharField(
+        label="Last name",
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            "autocomplete": "family-name",
+        }),
+    )
+
+    phone = forms.CharField(
         label="Phone number",
         max_length=30,
         required=False,
@@ -22,7 +30,7 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
-    ship_address1 = forms.CharField(
+    address1 = forms.CharField(
         label="Address line 1",
         max_length=255,
         widget=forms.TextInput(attrs={
@@ -30,7 +38,7 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
-    ship_address2 = forms.CharField(
+    address2 = forms.CharField(
         label="Address line 2",
         max_length=255,
         required=False,
@@ -39,7 +47,7 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
-    ship_city = forms.CharField(
+    city = forms.CharField(
         label="City",
         max_length=100,
         widget=forms.TextInput(attrs={
@@ -47,7 +55,7 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
-    ship_province = forms.CharField(
+    province = forms.CharField(
         label="Province / State",
         max_length=100,
         widget=forms.TextInput(attrs={
@@ -55,7 +63,7 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
-    ship_postal_code = forms.CharField(
+    postal_code = forms.CharField(
         label="Postal code",
         max_length=20,
         widget=forms.TextInput(attrs={
@@ -63,7 +71,7 @@ class ShippingAddressForm(forms.Form):
         }),
     )
 
-    ship_country = forms.CharField(
+    country = forms.CharField(
         label="Country",
         max_length=100,
         initial="Canada",
@@ -123,8 +131,8 @@ class ShippingAddressForm(forms.Form):
     # -------------------------
     # Validation
     # -------------------------
-    def clean_ship_phone(self):
-        phone = self.cleaned_data.get("ship_phone", "")
+    def clean_phone(self):
+        phone = self.cleaned_data.get("phone", "")
         if phone:
             cleaned = re.sub(r"[^\d+]", "", phone)
             if len(cleaned) < 7:
@@ -132,8 +140,8 @@ class ShippingAddressForm(forms.Form):
             return cleaned
         return phone
 
-    def clean_ship_postal_code(self):
-        code = self.cleaned_data["ship_postal_code"].strip().upper()
+    def clean_postal_code(self):
+        code = self.cleaned_data["postal_code"].strip().upper()
 
         # Canadian postal code: A1A 1A1
         if not re.match(r"^[A-Z]\d[A-Z]\s?\d[A-Z]\d$", code):
@@ -155,7 +163,7 @@ class ShippingAddressForm(forms.Form):
         
         # If shipping is selected, validate shipping address fields
         if fulfillment_method == "shipping":
-            required_fields = ["ship_name", "ship_address1", "ship_city", "ship_province", "ship_postal_code"]
+            required_fields = ["first_name", "last_name", "address1", "city", "province", "postal_code"]
             for field in required_fields:
                 if not cleaned_data.get(field):
                     if field not in self.errors:

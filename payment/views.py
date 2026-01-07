@@ -100,26 +100,30 @@ def _profile_initial(user) -> dict:
 
     if profile:
         return {
-            "ship_name": user.get_full_name() or user.get_username(),
-            "ship_phone": getattr(profile, "phone", "") or "",
-            "ship_address1": getattr(profile, "address1", "") or "",
-            "ship_address2": getattr(profile, "address2", "") or "",
-            "ship_city": getattr(profile, "city", "") or "",
-            "ship_province": getattr(profile, "province", "") or "",
-            "ship_postal_code": getattr(profile, "postal_code", "") or "",
-            "ship_country": getattr(profile, "country", "") or "Canada",
+            "first_name": getattr(profile, "first_name", "") or "",
+            "last_name": getattr(profile, "last_name", "") or "",
+            "phone": getattr(profile, "phone", "") or "",
+            "address1": getattr(profile, "address1", "") or "",
+            "address2": getattr(profile, "address2", "") or "",
+            "city": getattr(profile, "city", "") or "",
+            "province": getattr(profile, "province", "") or "",
+            "postal_code": getattr(profile, "postal_code", "") or "",
+            "country": getattr(profile, "country", "") or "Canada",
         }
     
-    # Fallback if no profile
+    # Fallback if no profile - try to get name from user model
+    user_first_name = getattr(user, "first_name", "") or ""
+    user_last_name = getattr(user, "last_name", "") or ""
     return {
-        "ship_name": user.get_full_name() or user.get_username(),
-        "ship_phone": "",
-        "ship_address1": "",
-        "ship_address2": "",
-        "ship_city": "",
-        "ship_province": "",
-        "ship_postal_code": "",
-        "ship_country": "Canada",
+        "first_name": user_first_name,
+        "last_name": user_last_name,
+        "phone": "",
+        "address1": "",
+        "address2": "",
+        "city": "",
+        "province": "",
+        "postal_code": "",
+        "country": "Canada",
     }
 
 
@@ -382,8 +386,21 @@ def checkout(request):
         
         # Prepare shipping data - if pickup, use pickup location address
         if is_pickup and pickup_location:
+            # For pickup, use user's name
+            user_first = getattr(request.user, "first_name", "") or ""
+            user_last = getattr(request.user, "last_name", "") or ""
+            if not user_first and not user_last:
+                # Try to get from profile
+                try:
+                    profile = request.user.profile
+                    user_first = getattr(profile, "first_name", "") or ""
+                    user_last = getattr(profile, "last_name", "") or ""
+                except Exception:
+                    pass
+            ship_name = f"{user_first} {user_last}".strip() or request.user.get_username()
+            
             shipping_data = {
-                "ship_name": request.user.get_full_name() or request.user.get_username(),
+                "ship_name": ship_name,
                 "ship_phone": pickup_location.phone or "",
                 "ship_address1": pickup_location.address1,
                 "ship_address2": pickup_location.address2 or "",
@@ -393,15 +410,20 @@ def checkout(request):
                 "ship_country": pickup_location.country,
             }
         else:
+            # Combine first_name and last_name into ship_name
+            first_name = form_data.get("first_name", "").strip()
+            last_name = form_data.get("last_name", "").strip()
+            ship_name = f"{first_name} {last_name}".strip()
+            
             shipping_data = {
-                "ship_name": form_data.get("ship_name", ""),
-                "ship_phone": form_data.get("ship_phone", ""),
-                "ship_address1": form_data.get("ship_address1", ""),
-                "ship_address2": form_data.get("ship_address2", ""),
-                "ship_city": form_data.get("ship_city", ""),
-                "ship_province": form_data.get("ship_province", ""),
-                "ship_postal_code": form_data.get("ship_postal_code", ""),
-                "ship_country": form_data.get("ship_country", "Canada"),
+                "ship_name": ship_name,
+                "ship_phone": form_data.get("phone", ""),
+                "ship_address1": form_data.get("address1", ""),
+                "ship_address2": form_data.get("address2", ""),
+                "ship_city": form_data.get("city", ""),
+                "ship_province": form_data.get("province", ""),
+                "ship_postal_code": form_data.get("postal_code", ""),
+                "ship_country": form_data.get("country", "Canada"),
             }
 
         with transaction.atomic():
