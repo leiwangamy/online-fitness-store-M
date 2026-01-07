@@ -230,16 +230,16 @@
       }
 
       .account-area-compact {
-        display: block !important;
+        display: flex !important;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
         font-size: 11px;
         padding: 5px 8px;
         background: #f0f0f0;
         border-radius: 4px;
         text-align: right;
-        max-width: 130px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        max-width: 160px;
         line-height: 1.2;
       }
 
@@ -248,6 +248,22 @@
         text-decoration: none;
         font-weight: bold;
         font-size: 11px;
+      }
+
+      .account-area-compact .logout-button-compact {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-top: 2px;
+      }
+
+      .account-area-compact .logout-button-compact:hover {
+        background: #c82333;
       }
 
       /* Add account info to menu on mobile */
@@ -346,11 +362,17 @@
       <!-- Mobile compact account area (upper right) -->
       <div class="account-area-compact">
         {% if user.is_authenticated %}
-          {% if user.email %}
-            👤 {{ user.email|truncatechars:12 }}
-          {% else %}
-            👤 {{ user.username|truncatechars:12 }}
-          {% endif %}
+          <div style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+            {% if user.email %}
+              👤 {{ user.email|truncatechars:15 }}
+            {% else %}
+              👤 {{ user.username|truncatechars:15 }}
+            {% endif %}
+          </div>
+          <form action="{% url 'accounts:account_logout' %}" method="post" style="display:inline; margin:0; padding:0;">
+            {% csrf_token %}
+            <button type="submit" class="logout-button-compact">Logout</button>
+          </form>
         {% else %}
           👤 <a href="{% url 'account_login' %}">Login</a> / <a href="{% url 'account_signup' %}">Sign Up</a>
         {% endif %}
@@ -402,20 +424,35 @@
         }, 5000);
       });
 
-      // Mobile menu toggle
-      const mobileMenuToggle = document.getElementById("mobileMenuToggle");
-      const navLinks = document.getElementById("navLinks");
-      
-      if (mobileMenuToggle && navLinks) {
-        // Toggle menu on button click
-        mobileMenuToggle.onclick = function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          navLinks.classList.toggle("mobile-open");
-          return false;
-        };
+      // Mobile menu toggle - simpler, more reliable approach
+      (function() {
+        const mobileMenuToggle = document.getElementById("mobileMenuToggle");
+        const navLinks = document.getElementById("navLinks");
         
-        // Close menu when clicking a link on mobile
+        if (!mobileMenuToggle || !navLinks) {
+          return;
+        }
+        
+        // Use multiple event types for better compatibility
+        function toggleMenu(e) {
+          if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          const isOpen = navLinks.classList.contains("mobile-open");
+          if (isOpen) {
+            navLinks.classList.remove("mobile-open");
+          } else {
+            navLinks.classList.add("mobile-open");
+          }
+          return false;
+        }
+        
+        // Add multiple event listeners
+        mobileMenuToggle.addEventListener("click", toggleMenu, false);
+        mobileMenuToggle.addEventListener("touchend", toggleMenu, false);
+        
+        // Close menu when clicking a link
         navLinks.querySelectorAll("a, button").forEach(element => {
           element.addEventListener("click", function() {
             if (window.innerWidth <= 768) {
@@ -424,21 +461,15 @@
           });
         });
         
-        // Close menu when clicking outside (with delay to avoid conflicts)
-        setTimeout(function() {
-          document.addEventListener("click", function(e) {
-            if (window.innerWidth <= 768) {
-              if (navLinks.classList.contains("mobile-open")) {
-                if (!navLinks.contains(e.target) && 
-                    !mobileMenuToggle.contains(e.target) && 
-                    e.target !== mobileMenuToggle) {
-                  navLinks.classList.remove("mobile-open");
-                }
-              }
+        // Close menu when clicking outside
+        document.addEventListener("click", function(e) {
+          if (window.innerWidth <= 768 && navLinks.classList.contains("mobile-open")) {
+            if (!navLinks.contains(e.target) && !mobileMenuToggle.contains(e.target)) {
+              navLinks.classList.remove("mobile-open");
             }
-          });
-        }, 100);
-      }
+          }
+        }, true);
+      })();
     });
 
   </script>
