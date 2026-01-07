@@ -14,17 +14,35 @@
   .buttons { margin-top: 20px; }
   .buttons a, .buttons button { margin-right: 15px; padding: 8px 16px; font-size: 1rem; }
   
-  /* Two-column layout for fulfillment and address */
-  .checkout-options {
+  /* Main checkout container - aligns all sections */
+  .checkout-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     margin-bottom: 25px;
+    align-items: start;
+  }
+  
+  /* Two-column layout for fulfillment and address */
+  .checkout-options {
+    display: contents; /* Makes children part of parent grid */
   }
   
   @media (max-width: 768px) {
-    .checkout-options {
+    .checkout-container {
       grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Order summary section - spans full width below on mobile, or can be in grid */
+  .order-summary-section {
+    grid-column: 1 / -1; /* Spans all columns */
+    margin-top: 20px;
+  }
+  
+  @media (min-width: 769px) {
+    .order-summary-section {
+      grid-column: 1 / -1; /* Keep spanning all columns for now, or we can make it 3-column */
     }
   }
   
@@ -138,12 +156,13 @@
       <a href="{% url 'cart:cart_detail' %}">Back to Cart</a>
     </div>
   </form>
-{% else %}
+  {% else %}
   {# Physical products - show shipping/pickup form #}
   <form method="post">
     {% csrf_token %}
 
-    <div class="checkout-options">
+    <div class="checkout-container">
+      <div class="checkout-options">
       <!-- Fulfillment Method Column -->
       <div class="fulfillment-method">
         <h3 style="margin-top: 0; margin-bottom: 10px;">Fulfillment Method</h3>
@@ -201,7 +220,7 @@
           </a>
         </div>
       </div>
-    </div>
+      </div> <!-- End checkout-options -->
 
     {# Hidden fields with default address values - only show form fields if there are errors #}
     {% if form.errors %}
@@ -265,63 +284,66 @@
       <input type="hidden" name="postal_code" value="{{ default_address.postal_code|default:'' }}">
       <input type="hidden" name="country" value="{{ default_address.country|default:'Canada' }}">
     {% endif %}
-  </div>
 
-  <!-- Pickup Location Section - shown below when pickup is selected -->
-  <div class="pickup-section" id="pickup-section" style="display: none; margin-top: 20px;">
-    <h3>Select Pickup Location</h3>
-    {% if pickup_locations %}
-      <p>
-        <label for="id_pickup_location_id">Pickup Location:</label>
-        <select name="pickup_location_id" id="id_pickup_location_id" class="pickup-location-select">
-          <option value="">Select a pickup location</option>
-          {% for location in pickup_locations %}
-            <option value="{{ location.id }}">{{ location.name }}</option>
-          {% endfor %}
-        </select>
-        {% if form.pickup_location_id.errors %}<span style="color: red;">{{ form.pickup_location_id.errors }}</span>{% endif %}
-      </p>
-      <div id="pickup-location-details" style="display: none;" class="pickup-location-info"></div>
-    {% else %}
-      <p style="color: #666; font-style: italic;">No pickup locations available at this time. Please select shipping instead.</p>
-      <input type="hidden" name="pickup_location_id" id="id_pickup_location_id" value="">
-    {% endif %}
-  </div>
-
-  {% if insufficient_items %}
-    <div class="warning">
-      Some items are not available in the requested quantity.
-      Please go back to your cart and change the quantities.
+    <!-- Pickup Location Section - shown below when pickup is selected -->
+    <div class="pickup-section" id="pickup-section" style="display: none; margin-top: 20px; grid-column: 1 / -1;">
+      <h3>Select Pickup Location</h3>
+      {% if pickup_locations %}
+        <p>
+          <label for="id_pickup_location_id">Pickup Location:</label>
+          <select name="pickup_location_id" id="id_pickup_location_id" class="pickup-location-select">
+            <option value="">Select a pickup location</option>
+            {% for location in pickup_locations %}
+              <option value="{{ location.id }}">{{ location.name }}</option>
+            {% endfor %}
+          </select>
+          {% if form.pickup_location_id.errors %}<span style="color: red;">{{ form.pickup_location_id.errors }}</span>{% endif %}
+        </p>
+        <div id="pickup-location-details" style="display: none;" class="pickup-location-info"></div>
+      {% else %}
+        <p style="color: #666; font-style: italic;">No pickup locations available at this time. Please select shipping instead.</p>
+        <input type="hidden" name="pickup_location_id" id="id_pickup_location_id" value="">
+      {% endif %}
     </div>
-    <ul class="warning">
-      {% for i in insufficient_items %}
-        <li>{{ i.product.name }} – requested: {{ i.requested }}, available: {{ i.available }}</li>
-      {% endfor %}
-    </ul>
-  {% endif %}
 
-  <h2>Order Summary</h2>
-  <table>
-    <tr>
-      <th>Product</th>
-      <th>Quantity</th>
-      <th>Line Total</th>
-    </tr>
-    {% for item in items %}
+    {% if insufficient_items %}
+      <div class="warning" style="grid-column: 1 / -1;">
+        Some items are not available in the requested quantity.
+        Please go back to your cart and change the quantities.
+      </div>
+      <ul class="warning" style="grid-column: 1 / -1;">
+        {% for i in insufficient_items %}
+          <li>{{ i.product.name }} – requested: {{ i.requested }}, available: {{ i.available }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <!-- Order Summary Section - aligned with checkout options -->
+    <div class="order-summary-section">
+    <h2 style="margin-top: 0;">Order Summary</h2>
+    <table style="width: 100%; max-width: 100%;">
       <tr>
-        <td>{{ item.product.name }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>${{ item.line_total }}</td>
+        <th>Product</th>
+        <th>Quantity</th>
+        <th>Line Total</th>
       </tr>
-    {% endfor %}
-  </table>
+      {% for item in items %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>${{ item.line_total }}</td>
+        </tr>
+      {% endfor %}
+    </table>
 
-  <div class="totals">
-    <p>Subtotal: <strong id="subtotal-display">${{ subtotal }}</strong></p>
-    <p>GST/HST (5%): <strong id="tax-display">${{ tax }}</strong></p>
-    <p>Shipping: <strong id="shipping-display">${{ shipping }}</strong> (<span id="shipping-label">{{ shipping_label }}</span>)</p>
-    <p><strong>Total: <span id="total-display">${{ total }}</span></strong></p>
-  </div>
+    <div class="totals">
+      <p>Subtotal: <strong id="subtotal-display">${{ subtotal }}</strong></p>
+      <p>GST/HST (5%): <strong id="tax-display">${{ tax }}</strong></p>
+      <p>Shipping: <strong id="shipping-display">${{ shipping }}</strong> (<span id="shipping-label">{{ shipping_label }}</span>)</p>
+      <p><strong>Total: <span id="total-display">${{ total }}</span></strong></p>
+    </div>
+    </div> <!-- End order-summary-section -->
+    </div> <!-- End checkout-container -->
 
   <div class="buttons">
     {% if not insufficient_items %}

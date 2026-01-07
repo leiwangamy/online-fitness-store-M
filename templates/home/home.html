@@ -156,6 +156,9 @@
             margin-top: 30px;
             text-align: center;
             padding: 20px 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
         }
         
         .pagination .step-links {
@@ -164,10 +167,20 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 8px;
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .pagination-group {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
         
         .pagination .step-links a,
-        .pagination .step-links .disabled {
+        .pagination .step-links .disabled,
+        .pagination .step-links .current {
             padding: 8px 14px;
             border: 1px solid #ccc;
             border-radius: 4px;
@@ -176,6 +189,7 @@
             font-size: 14px;
             min-width: 60px;
             text-align: center;
+            white-space: nowrap;
         }
         
         .pagination .step-links a {
@@ -188,9 +202,8 @@
         }
         
         .pagination .current {
-            padding: 8px 14px;
             font-weight: bold;
-            font-size: 14px;
+            border: 1px solid #ccc;
         }
         
         .pagination .disabled {
@@ -222,10 +235,17 @@
             
             .pagination .step-links {
                 gap: 5px;
+                flex-wrap: wrap;
+                max-width: 100%;
+            }
+            
+            .pagination-group {
+                gap: 5px;
             }
             
             .pagination .step-links a,
-            .pagination .step-links .disabled {
+            .pagination .step-links .disabled,
+            .pagination .step-links .current {
                 padding: 6px 10px;
                 font-size: 12px;
                 min-width: 50px;
@@ -335,27 +355,31 @@
     <!-- Pagination -->
     {% if page_obj and page_obj.paginator.num_pages > 1 %}
     <div class="pagination">
-        <span class="step-links">
-            {% if page_obj.has_previous %}
-                <a href="?page=1{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">&laquo; first</a>
-                <a href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">previous</a>
-            {% else %}
-                <span class="disabled">&laquo; first</span>
-                <span class="disabled">previous</span>
-            {% endif %}
+        <div class="step-links">
+            <div class="pagination-group">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">&laquo; first</a>
+                    <a href="?page={{ page_obj.previous_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">previous</a>
+                {% else %}
+                    <span class="disabled">&laquo; first</span>
+                    <span class="disabled">previous</span>
+                {% endif %}
+            </div>
 
             <span class="current">
                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
             </span>
 
-            {% if page_obj.has_next %}
-                <a href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">next</a>
-                <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">last &raquo;</a>
-            {% else %}
-                <span class="disabled">next</span>
-                <span class="disabled">last &raquo;</span>
-            {% endif %}
-        </span>
+            <div class="pagination-group">
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">next</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}{% if selected_category %}&category={{ selected_category }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}">last &raquo;</a>
+                {% else %}
+                    <span class="disabled">next</span>
+                    <span class="disabled">last &raquo;</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
     {% endif %}
 
