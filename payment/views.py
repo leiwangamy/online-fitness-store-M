@@ -305,7 +305,13 @@ def checkout(request):
     
     # Physical products present - show shipping/pickup form
     # Get pickup locations for template
-    pickup_locations = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
+    try:
+        pickup_locations = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting pickup locations: {e}")
+        pickup_locations = PickupLocation.objects.none()  # Empty queryset
     
     # For GET request, calculate shipping with default (not pickup)
     shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=False)
@@ -553,7 +559,10 @@ def checkout(request):
         profile = getattr(request.user, "profile", None)
         if not profile:
             profile, _ = Profile.objects.get_or_create(user=request.user)
-    except Exception:
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting profile: {e}")
         profile = None
     
     # Create form with pickup locations - use initial data, no validation errors on GET
@@ -564,10 +573,21 @@ def checkout(request):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error creating ShippingAddressForm: {e}")
-        form = ShippingAddressForm(initial=initial)
+        try:
+            form = ShippingAddressForm(initial=initial)
+        except Exception as e2:
+            logger.error(f"Error creating ShippingAddressForm without pickup_locations: {e2}")
+            # Last resort - create form with minimal data
+            form = ShippingAddressForm()
     
     # Convert queryset to list for template (safer for iteration)
-    pickup_locations_list = list(pickup_locations) if pickup_locations else []
+    try:
+        pickup_locations_list = list(pickup_locations) if pickup_locations else []
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error converting pickup_locations to list: {e}")
+        pickup_locations_list = []
     
     return render(
         request,
