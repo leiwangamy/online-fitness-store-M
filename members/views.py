@@ -2,7 +2,26 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from .models import MemberProfile
+
+def membership_plans(request):
+    """Public view to show membership plans. Redirects to login when Subscribe is clicked."""
+    # If user is authenticated, redirect to the full membership page
+    if request.user.is_authenticated:
+        return redirect("members:my_membership")
+    
+    if request.method == "POST":
+        # If user tries to subscribe without being logged in, redirect to login
+        login_url = reverse("account_login")
+        next_url = reverse("members:my_membership")
+        return redirect(f"{login_url}?next={next_url}")
+    
+    # Show public membership plans
+    return render(request, "members/membership_plans.html", {
+        "basic_price": 39,
+        "premium_price": 79
+    })
 
 @login_required
 def my_membership(request):

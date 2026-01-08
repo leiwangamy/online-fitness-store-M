@@ -270,7 +270,7 @@
       }
 
       .account-area-compact .logout-button-compact {
-        background: #dc3545;
+        background: #ff9800;
         color: white;
         border: none;
         padding: 3px 8px;
@@ -282,7 +282,7 @@
       }
 
       .account-area-compact .logout-button-compact:hover {
-        background: #c82333;
+        background: #f57c00;
       }
 
       /* Add account info to menu on mobile */
@@ -337,6 +337,7 @@
         <a href="{% url 'home:home' %}">Home</a>
         <a href="{% url 'cart:cart_detail' %}">Cart</a>
 
+        <a href="{% url 'members:membership_plans' %}">Membership</a>
         {% if user.is_authenticated %}
           <a href="{% url 'orders:my_orders' %}">My Orders</a>
           <a href="{% url 'members:my_membership' %}">My Membership</a>
@@ -355,8 +356,8 @@
             <button type="submit" class="logout-link-button">Logout</button>
           </form>
         {% else %}
-          👤 <a href="{% url 'account_login' %}">Login</a>
-          or <a href="{% url 'account_signup' %}">Sign Up</a>
+          👤 <a href="{% url 'account_login' %}?next={{ request.path|urlencode }}">Sign In</a>
+          <span style="font-size: 0.9em; color: #666;">No account yet? <a href="{% url 'account_signup' %}">Sign up here</a></span>
         {% endif %}
       </div>
 
@@ -375,8 +376,8 @@
             <button type="submit" class="logout-button-compact">Logout</button>
           </form>
         {% else %}
-          <a href="{% url 'account_login' %}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px; display: block; margin-bottom: 3px;">Login</a>
-          <a href="{% url 'account_signup' %}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px; display: block;">Sign Up</a>
+          <a href="{% url 'account_login' %}?next={{ request.path|urlencode }}" style="color: #0066cc; text-decoration: none; font-weight: bold; font-size: 11px; display: block; margin-bottom: 3px;">Sign In</a>
+          <span style="font-size: 9px; color: #666; display: block; line-height: 1.2;">No account? <a href="{% url 'account_signup' %}" style="color: #0066cc; text-decoration: underline;">Sign up</a></span>
         {% endif %}
       </div>
     </nav>
