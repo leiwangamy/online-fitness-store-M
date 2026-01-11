@@ -107,6 +107,26 @@ if result.returncode == 0:
     print(f"\n✅ Backup completed successfully!")
     print(f"   File: {backup_file}")
     print(f"   Size: {file_size:.2f} MB")
+    
+    # Clean up old local backups (keep only 3 most recent)
+    # Only delete files that match the local backup pattern (without "prod" in name)
+    local_backups = sorted(
+        [f for f in BACKUP_DIR.glob(f"{DB_NAME}_*.backup") if "prod" not in f.name],
+        key=lambda f: f.stat().st_mtime,
+        reverse=True
+    )
+    
+    if len(local_backups) > 3:
+        backups_to_delete = local_backups[3:]
+        print(f"\nCleaning up old local backups (keeping 3 most recent)...")
+        for old_backup in backups_to_delete:
+            try:
+                old_backup.unlink()
+                print(f"   Deleted: {old_backup.name}")
+            except Exception as e:
+                print(f"   Warning: Could not delete {old_backup.name}: {e}")
+        print(f"   Kept {len(local_backups) - len(backups_to_delete)} local backup(s)")
+    
     print(f"\nTo restore this backup:")
     print(f"   pg_restore -U {DB_USER} -h {DB_HOST} -p {DB_PORT} -d {DB_NAME} {backup_file}")
 else:
