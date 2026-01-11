@@ -443,6 +443,9 @@
             </button>
             <div class="account-dropdown-menu" id="accountDropdown">
               <a href="{% url 'profiles:account_profile' %}">Profile</a>
+              <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
+                Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_membership_status|default:"None" }}</strong>
+              </div>
               <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
               <a href="{% url 'members:manage_subscription' %}">Manage Subscription</a>
               <div class="dropdown-divider"></div>
@@ -464,6 +467,9 @@
             </button>
             <div class="account-dropdown-menu" id="accountDropdownDesktop">
               <a href="{% url 'profiles:account_profile' %}">Profile</a>
+              <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
+                Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_membership_status|default:"None" }}</strong>
+              </div>
               <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
               <a href="{% url 'members:manage_subscription' %}">Manage Subscription</a>
               <div class="dropdown-divider"></div>

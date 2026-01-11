@@ -30,17 +30,83 @@
         border-radius: 8px;
         padding: 15px;
         background: #f8f9fa;
+        display: flex;
+        flex-direction: column;
     }
 
     .plan h3 {
         margin-top: 0;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    .plan-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .plan-content p {
+        margin-top: 0;
+        margin-bottom: 8px;
+        line-height: 1.5;
+        text-align: left;
+        direction: ltr;
+        unicode-bidi: embed;
+    }
+
+    .plan-description {
+        margin-top: 0;
+        margin-bottom: 12px;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    .plan-description p {
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+
+    .plan-details {
+        margin-top: 0;
+        margin-bottom: 8px;
+        line-height: 1.6;
+        color: #333;
+    }
+
+    .plan-details p {
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+
+    .plan-details ul,
+    .plan-details ol {
+        margin: 8px 0;
+        padding-left: 1.5em;
+    }
+
+    .plan-details li {
+        margin-bottom: 4px;
+        line-height: 1.5;
+    }
+
+    .plan-button-container {
+        margin-top: auto;
+        padding-top: 10px;
+        text-align: center;
+    }
+
+    .plan-price {
+        margin-bottom: 25px;
+        font-size: 1.2em;
     }
 
     .btn {
-        padding: 8px 14px;
+        padding: 12px 24px;
         border-radius: 6px;
         border: 1px solid #999;
         cursor: pointer;
+        font-size: 16px;
     }
 
     .btn-primary {
@@ -57,47 +123,41 @@
 </style>
 
 <div class="membership-card">
-    <h1>Membership Plans</h1>
+    <h1>{% if content %}{{ content.page_title }}{% else %}Membership Plans{% endif %}</h1>
     
     <div class="info-message">
-        <p><strong>Join our fitness club!</strong> Choose a membership plan that fits your needs. You'll need to sign in to subscribe.</p>
+        <p><strong>{% if content %}{{ content.intro_text|linebreaks }}{% else %}Join our fitness club! Choose a membership plan that fits your needs. You'll need to sign in to subscribe.{% endif %}</strong></p>
     </div>
 </div>
 
 <h2>Available Plans</h2>
 
 <div class="plans">
-
-  <!-- BASIC -->
-  <div class="plan">
-    <h3>Facility Only</h3>
-    <p>Unlimited access to fitness facility and gym equipment.</p>
-    <p><strong>{% if basic_price == 0 %}Free{% else %}${{ basic_price }}/month{% endif %}</strong></p>
-    <p>Great for members who want to train independently.</p>
-
-    <form method="post" action="{% url 'members:membership_plans' %}">
-        {% csrf_token %}
-        <button type="submit" name="subscribe_basic" class="btn btn-primary">
-            Subscribe
-        </button>
-    </form>
-  </div>
-
-  <!-- PREMIUM -->
-  <div class="plan">
-    <h3>Facility + Classes</h3>
-    <p>Unlimited access to fitness facility + all in-class training and group lessons.</p>
-    <p><strong>${{ premium_price }}/month</strong></p>
-    <p>Best choice for members who want coached classes + open gym.</p>
-
-    <form method="post" action="{% url 'members:membership_plans' %}">
-        {% csrf_token %}
-        <button type="submit" name="subscribe_premium" class="btn btn-primary">
-            Subscribe
-        </button>
-    </form>
-  </div>
-
+  {% if plans %}
+    {% for plan in plans %}
+      <div class="plan">
+        <div class="plan-content">
+          <h3>{{ plan.name }}</h3>
+          <div class="plan-description">{{ plan.description|safe }}</div>
+          {% if plan.details %}
+            <div class="plan-details">{{ plan.details|safe }}</div>
+          {% endif %}
+        </div>
+        <div class="plan-button-container">
+          <p class="plan-price"><strong>{{ plan.price_display }}</strong></p>
+          <form method="post" action="{% url 'members:membership_plans' %}">
+              {% csrf_token %}
+              <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+              <button type="submit" name="subscribe_plan" class="btn btn-primary">
+                  Sign in to join
+              </button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p>No membership plans available at this time. Please check back later.</p>
+  {% endif %}
 </div>
 
 {% endblock %}
