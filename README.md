@@ -1,6 +1,51 @@
 # Online Fitness Store
+![Python](https://img.shields.io/badge/Python-3.11+-blue)
+![Django](https://img.shields.io/badge/Django-4.x-darkgreen)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14-blue)
+![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
+![AWS](https://img.shields.io/badge/AWS-EC2-orange)
+![Stripe](https://img.shields.io/badge/Payments-Stripe-6772E5)
+![License](https://img.shields.io/badge/License-Educational-lightgrey)
+
 
 A comprehensive Django-based e-commerce platform for selling fitness products, digital downloads, and services. This project demonstrates a full-stack web application with user authentication, product management, shopping cart, order processing, and deployment to AWS EC2.
+
+## 🔐 Demo Access
+
+**🌐 [Visit Live Site](https://fitness.lwsoc.com/)**
+
+**Demo Credentials:**
+- Email: `demo@fitness-demo.com`
+- Password: `Demo123!`
+
+> ⚠️ **Note**: This is a demo account. All data is reset periodically. The demo account is pre-verified for instant access. In production, email verification is required for all new users.
+
+
+
+
+## 📸 Screenshots
+
+### Home Page
+Public landing page with featured products and membership access.
+![Home](screenshots/home.png)
+
+### Product Listing
+Search, category filters, and pagination for physical, digital, and service products.
+![Products](screenshots/products.png)
+
+### Product Detail
+Detailed product view with media gallery, stock tracking, and add-to-cart.
+![Product Detail](screenshots/product_detail.png)
+
+### Shopping Cart
+Cart management with tax calculation and shipping rules.
+![Cart](screenshots/cart.png)
+
+### Admin Dashboard
+Django admin interface for managing products, orders, inventory, and memberships.
+![Admin](screenshots/dashboard.png)
+
+
 
 ## 🚀 Features
 
@@ -38,16 +83,43 @@ A comprehensive Django-based e-commerce platform for selling fitness products, d
 - **AWS EC2 Deployment**: Complete deployment guide for cloud hosting
 - **Database**: PostgreSQL for production, SQLite for development
 
+## ⚡ Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/online-fitness-store-P.git
+cd online-fitness-store-P
+
+# Using Docker (recommended)
+docker compose up -d
+
+# Or local setup
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp ec2.env.example .env
+# Edit .env with your settings
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+Visit `http://localhost:8000` in your browser.
+
 ## 📋 Table of Contents
 
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Documentation](#documentation)
-- [Contributing](#contributing)
+- [Quick Start](#-quick-start)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Project Structure](#-project-structure)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Development](#-development)
+- [Deployment](#-deployment)
+- [Key Challenges & Solutions](#-key-challenges--solutions)
+- [Documentation](#-documentation)
+- [Contributing](#-contributing)
 
 ## 🛠 Tech Stack
 
@@ -68,6 +140,23 @@ A comprehensive Django-based e-commerce platform for selling fitness products, d
 - **Nginx**: Reverse proxy and static file serving
 - **Gunicorn**: WSGI HTTP server
 - **AWS EC2**: Cloud hosting
+
+## 🏗️ Architecture
+
+### System Design
+- **MVC Pattern**: Django follows Model-View-Template architecture
+- **Database Design**: Normalized schema with proper relationships and foreign keys
+- **Session Management**: Anonymous cart support with session-based storage that transfers to database on login
+- **Security**: CSRF protection, SQL injection prevention, XSS protection, secure password hashing
+- **Scalability**: Docker containerization, Nginx reverse proxy, static file optimization with WhiteNoise
+
+### Technical Highlights
+- **Anonymous Cart**: Session-based cart for non-authenticated users, seamlessly transfers to database cart upon login using Django signals
+- **Dynamic Checkout**: Conditional checkout flow that adapts based on product types (shipping for physical, instant for digital/services)
+- **Media Management**: Multi-image support with main image selection and media gallery
+- **Featured Products**: Admin-configurable featured products with singleton pattern for content management
+- **Search & Filtering**: Full-text search with category filtering and pagination
+- **Context Processors**: Global cart item count available across all templates
 
 ## 📁 Project Structure
 
@@ -168,11 +257,11 @@ online-fitness-store/
    python manage.py runserver
    ```
 
-   Visit `https://fitness.lwsoc.com/` in your browser.
+   Visit `http://localhost:8000` in your browser.
 
 ### Docker Setup (Recommended)
 
-See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md) for detailed Docker setup instructions.
+See [docs/setup/DOCKER_SETUP.md](docs/setup/DOCKER_SETUP.md) for detailed Docker setup instructions.
 
 ## ⚙️ Configuration
 
@@ -198,7 +287,7 @@ Key configurations:
 - **Database**: PostgreSQL for production, SQLite for development
 - **Static Files**: Served via WhiteNoise in production
 - **Media Files**: Served via Nginx in production
-- **Email**: Configured for email verification (see [docs/EMAIL_VERIFICATION.md](docs/EMAIL_VERIFICATION.md))
+- **Email**: Configured for email verification (see [docs/setup/EMAIL_VERIFICATION.md](docs/setup/EMAIL_VERIFICATION.md))
 - **Authentication**: Django Allauth for user management
 
 ## 💻 Development
@@ -245,7 +334,7 @@ python manage.py check
 
 ### AWS EC2 Deployment
 
-Complete deployment guide: [docs/AWS_DEPLOYMENT.md](docs/AWS_DEPLOYMENT.md)
+Complete deployment guide: [docs/deployment/AWS_DEPLOYMENT.md](docs/deployment/AWS_DEPLOYMENT.md)
 
 Quick steps:
 1. Set up EC2 instance
@@ -274,13 +363,18 @@ All documentation is organized in the `docs/` folder. See [docs/README.md](docs/
 **Quick Links:**
 - **[Project Structure](docs/PROJECT_STRUCTURE.md)**: Detailed project organization and file structure
 - **[Code Documentation](docs/CODE_DOCUMENTATION.md)**: Code documentation guide and standards
-- **[AWS Deployment](docs/AWS_DEPLOYMENT.md)**: Complete AWS EC2 deployment guide
-- **[Docker Setup](docs/DOCKER_SETUP.md)**: Docker setup and configuration
-- **[Nginx Setup](docs/NGINX_SETUP.md)**: Nginx reverse proxy configuration
-- **[HTTPS Setup](docs/HTTPS_SETUP.md)**: SSL/HTTPS setup guide
-- **[Pickup Location Setup](docs/PICKUP_LOCATION_SETUP.md)**: Pickup location feature guide
-- **[Email Verification](docs/EMAIL_VERIFICATION.md)**: Email verification setup
-- **[Database Setup](docs/DATABASE_SETUP.md)**: Database configuration
+- **[AWS Deployment](docs/deployment/AWS_DEPLOYMENT.md)**: Complete AWS EC2 deployment guide
+- **[Docker Setup](docs/setup/DOCKER_SETUP.md)**: Docker setup and configuration
+- **[Nginx Setup](docs/setup/NGINX_SETUP.md)**: Nginx reverse proxy configuration
+- **[HTTPS Setup](docs/setup/HTTPS_SETUP.md)**: SSL/HTTPS setup guide
+- **[Pickup Location Setup](docs/setup/PICKUP_LOCATION_SETUP.md)**: Pickup location feature guide
+- **[Email Verification](docs/setup/EMAIL_VERIFICATION.md)**: Email verification setup
+- **[Database Setup](docs/setup/DATABASE_SETUP.md)**: Database configuration
+
+**Organized Documentation:**
+- **[Deployment Guides](docs/deployment/)**: All deployment-related documentation
+- **[Setup Guides](docs/setup/)**: Configuration and setup instructions
+- **[User Guides](docs/guides/)**: Testing, migration, and feature guides
 
 ## 🎯 Key Features Implementation
 
@@ -318,6 +412,43 @@ The system supports three product types:
 5. Order created with status "paid" (simulated payment)
 6. Digital products: Download links generated and emailed
 7. Services: Seats deducted from availability
+
+## 💡 Key Challenges & Solutions
+
+### Challenge: Anonymous Cart Management
+**Problem**: Users should be able to add items to cart before signing in, but cart data needs to persist after login.
+
+**Solution**: 
+- Implemented session-based cart storage for anonymous users
+- Created utility functions (`cart/utils.py`) to manage both session and database carts
+- Used Django signals to automatically transfer session cart items to user's database cart upon login
+- Created context processor to display cart item count globally across all templates
+
+### Challenge: Multi-Product Type Checkout
+**Problem**: Different product types (physical, digital, service) require different checkout flows and validation.
+
+**Solution**: 
+- Created conditional checkout logic that adapts based on cart contents
+- Physical products: Full checkout with shipping/pickup options and address form
+- Digital/Service only: Simplified checkout (order summary only, no shipping)
+- Mixed cart: Full checkout with shipping options for physical items
+
+### Challenge: Featured Products Management
+**Problem**: Admin needs flexible way to manage featured products and customize section content.
+
+**Solution**: 
+- Added `is_featured` boolean flag to Product model for easy admin control
+- Created singleton pattern model (`FeaturedProductsContent`) for admin-editable title and description
+- Implemented efficient querying with `select_related` and `prefetch_related` for optimal performance
+- Limited featured products display to 3 items on home page
+
+### Challenge: Product Image Display
+**Problem**: Product images were being cropped and not displaying completely.
+
+**Solution**: 
+- Changed CSS from `object-fit: cover` to `object-fit: contain`
+- Added white padding wrapper around images to ensure full visibility
+- Implemented responsive image sizing with proper aspect ratio preservation
 
 ## 🤝 Contributing
 
