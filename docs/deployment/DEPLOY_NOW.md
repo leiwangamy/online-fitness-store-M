@@ -9,7 +9,7 @@ ssh -i ~/Downloads/fitness-key.pem ubuntu@ec2-15-223-56-68.ca-central-1.compute.
 
 ### 2. Navigate to your project directory:
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 ```
 
 ### 3. Pull the latest changes from GitHub:

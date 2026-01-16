@@ -30,7 +30,7 @@ This guide will help you set up nginx as a reverse proxy so your site is accessi
 SSH into your EC2 instance and pull the latest code:
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 git pull origin main
 ```
 

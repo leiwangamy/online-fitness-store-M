@@ -72,7 +72,7 @@ This document summarizes the code refactoring and documentation improvements mad
 ## 📁 New File Structure
 
 ```
-online-fitness-store-P/
+online-fitness-store-M/
 ├── README.md                    # Main project README (NEW/ENHANCED)
 ├── docs/                        # Documentation folder (NEW)
 │   ├── README.md               # Documentation index (NEW)

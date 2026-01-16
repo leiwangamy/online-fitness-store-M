@@ -15,7 +15,7 @@ ssh -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com
 ### Step 2: Navigate to Your Project Directory
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 # Or wherever you cloned the repository
 ```
 

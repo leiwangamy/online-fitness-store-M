@@ -9,7 +9,7 @@ The 502 Bad Gateway error is likely occurring because the new models (`BlogPost`
 
 ```bash
 # Navigate to project directory
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 
 # Pull latest changes (if not already done)
 git pull origin main

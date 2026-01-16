@@ -18,7 +18,7 @@ After pulling the latest code, create and run migrations:
 
 ```bash
 # On EC2
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 git pull origin main
 
 # Inside Docker container

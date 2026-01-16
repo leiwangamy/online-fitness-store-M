@@ -2,7 +2,7 @@
 # This script downloads the production database backup from EC2
 
 $keyPath = "$env:USERPROFILE\Downloads\fitness-key.pem"
-$remotePath = "ubuntu@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:~/online-fitness-store-P/backups/fitness_club_db_prod_2026-01-11_05-03-51.backup"
+$remotePath = "ubuntu@your-ec2-instance.compute.amazonaws.com:~/online-fitness-store-M/backups/fitness_club_db_prod_2026-01-11_05-03-51.backup"
 $localPath = ".\backups\"
 
 # Check if key file exists

@@ -4,7 +4,7 @@
 
 set -e  # Exit on error
 
-BACKUP_DIR="$HOME/online-fitness-store-P/backups"
+BACKUP_DIR="$HOME/online-fitness-store-M/backups"
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP_FILE="$BACKUP_DIR/fitness_club_db_prod_$TIMESTAMP.backup"
 

@@ -12,7 +12,7 @@ A comprehensive Django-based e-commerce platform for selling fitness products, d
 
 ## 🔐 Demo Access
 
-**🌐 [Visit Live Site](https://fitness.lwsoc.com/)**
+**🌐 [Visit Live Site](https://your-domain.com/)**
 
 **Demo Credentials:**
 - Email: `demo@fitness-demo.com`
@@ -87,8 +87,8 @@ Django admin interface for managing products, orders, inventory, and memberships
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/online-fitness-store-P.git
-cd online-fitness-store-P
+git clone https://github.com/yourusername/online-fitness-store-M.git
+cd online-fitness-store-M
 
 # Using Docker (recommended)
 docker compose up -d
@@ -211,8 +211,8 @@ online-fitness-store/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/online-fitness-store-P.git
-   cd online-fitness-store-P
+   git clone https://github.com/yourusername/online-fitness-store-M.git
+   cd online-fitness-store-M
    ```
 
 2. **Create a virtual environment:**
@@ -312,7 +312,7 @@ python manage.py migrate
    python manage.py createsuperuser
    ```
 
-2. Visit `https://fitness.lwsoc.com/admin/` and login
+2. Visit `http://localhost:8000/admin/` and login
 
 ### Key Development Commands
 

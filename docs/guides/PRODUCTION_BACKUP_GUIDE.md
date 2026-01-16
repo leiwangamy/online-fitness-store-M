@@ -7,7 +7,7 @@ This guide explains how to backup your production database on EC2.
 SSH to your EC2 server and run:
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 docker compose -f docker-compose.prod.yml exec -T db pg_dump -U fitness_user -F c -b fitness_club_db > "backups/fitness_club_db_prod_$(date +%Y-%m-%d_%H-%M-%S).backup"
 ```
 
@@ -24,7 +24,7 @@ ssh -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com
 ### Step 2: Navigate to Your Project Directory
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 ```
 
 ### Step 3: Create Backups Directory (if it doesn't exist)
@@ -83,7 +83,7 @@ docker compose -f docker-compose.prod.yml exec -T db pg_dump -U fitness_user -F 
 Create a backup script for easier use:
 
 ```bash
-nano ~/online-fitness-store-P/backup_production.sh
+nano ~/online-fitness-store-M/backup_production.sh
 ```
 
 Add this content:
@@ -95,7 +95,7 @@ Add this content:
 
 set -e  # Exit on error
 
-BACKUP_DIR="$HOME/online-fitness-store-P/backups"
+BACKUP_DIR="$HOME/online-fitness-store-M/backups"
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
 BACKUP_FILE="$BACKUP_DIR/fitness_club_db_prod_$TIMESTAMP.backup"
 
@@ -154,13 +154,13 @@ fi
 Make it executable:
 
 ```bash
-chmod +x ~/online-fitness-store-P/backup_production.sh
+chmod +x ~/online-fitness-store-M/backup_production.sh
 ```
 
 Then run it:
 
 ```bash
-~/online-fitness-store-P/backup_production.sh
+~/online-fitness-store-M/backup_production.sh
 ```
 
 ## Download Backup to Local Machine
@@ -169,13 +169,13 @@ To download the backup to your local machine:
 
 ```bash
 # From your local machine (PowerShell on Windows)
-scp -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:~/online-fitness-store-P/backups/fitness_club_db_prod_*.backup ./
+scp -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:~/online-fitness-store-M/backups/fitness_club_db_prod_*.backup ./
 ```
 
 Or download a specific backup:
 
 ```bash
-scp -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:~/online-fitness-store-P/backups/fitness_club_db_prod_2026-01-11_14-30-45.backup ./backups/
+scp -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com:~/online-fitness-store-M/backups/fitness_club_db_prod_2026-01-11_14-30-45.backup ./backups/
 ```
 
 ## Restore from Backup
@@ -185,7 +185,7 @@ scp -i your-key.pem ec2-user@ec2-15-223-56-68.ca-central-1.compute.amazonaws.com
 To restore a backup:
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 docker compose -f docker-compose.prod.yml exec -T db pg_restore -U fitness_user -d fitness_club_db --clean --if-exists < backups/fitness_club_db_prod_YYYY-MM-DD_HH-MM-SS.backup
 ```
 
@@ -208,10 +208,10 @@ To set up automatic daily backups using cron:
 crontab -e
 
 # Add this line to backup daily at 2 AM
-0 2 * * * cd ~/online-fitness-store-P && docker compose -f docker-compose.prod.yml exec -T db pg_dump -U fitness_user -F c -b fitness_club_db > "backups/fitness_club_db_prod_$(date +\%Y-\%m-\%d_\%H-\%M-\%S).backup"
+0 2 * * * cd ~/online-fitness-store-M && docker compose -f docker-compose.prod.yml exec -T db pg_dump -U fitness_user -F c -b fitness_club_db > "backups/fitness_club_db_prod_$(date +\%Y-\%m-\%d_\%H-\%M-\%S).backup"
 
 # Or use the backup script
-0 2 * * * ~/online-fitness-store-P/backup_production.sh
+0 2 * * * ~/online-fitness-store-M/backup_production.sh
 ```
 
 ## Clean Up Old Backups
@@ -219,13 +219,13 @@ crontab -e
 To keep only the last 7 days of backups:
 
 ```bash
-find ~/online-fitness-store-P/backups -name "fitness_club_db_prod_*.backup" -mtime +7 -delete
+find ~/online-fitness-store-M/backups -name "fitness_club_db_prod_*.backup" -mtime +7 -delete
 ```
 
 Or add to cron to run daily:
 
 ```bash
-0 3 * * * find ~/online-fitness-store-P/backups -name "fitness_club_db_prod_*.backup" -mtime +7 -delete
+0 3 * * * find ~/online-fitness-store-M/backups -name "fitness_club_db_prod_*.backup" -mtime +7 -delete
 ```
 
 ## Backup Checklist

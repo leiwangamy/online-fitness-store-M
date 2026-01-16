@@ -56,7 +56,7 @@ DEFAULT_FROM_EMAIL=Fitness Club <info@lwsoc.com>
 
 2. Edit the `.env` file:
    ```bash
-   cd ~/online-fitness-store-P
+   cd ~/online-fitness-store-M
    nano .env
    ```
 

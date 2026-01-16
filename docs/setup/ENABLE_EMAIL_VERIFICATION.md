@@ -8,7 +8,7 @@ This guide will help you enable email verification for new user signups using yo
 SSH into your EC2 instance and edit the `.env` file:
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 nano .env
 ```
 
@@ -54,7 +54,7 @@ If you haven't already, you need to create an App Password for your Google Works
 The code changes include a custom adapter to ensure usernames match emails:
 
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 git pull origin main  # or your branch name
 ```
 

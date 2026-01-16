@@ -16,7 +16,7 @@ Django-allauth uses the Django Sites framework to generate email links. We need 
 
 2. **Open Django shell:**
    ```bash
-   cd ~/online-fitness-store-P
+   cd ~/online-fitness-store-M
    docker compose -f docker-compose.prod.yml exec web python manage.py shell
    ```
 

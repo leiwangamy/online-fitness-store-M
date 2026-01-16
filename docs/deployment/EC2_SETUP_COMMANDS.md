@@ -6,7 +6,7 @@ Run these commands on your EC2 instance:
 
 ```bash
 # 1. Navigate to your project directory
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 
 # 2. Create .env file from the example
 cp ec2.env.example .env

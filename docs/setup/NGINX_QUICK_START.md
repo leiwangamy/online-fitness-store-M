@@ -14,7 +14,7 @@ Nginx reverse proxy has been configured. Follow these steps on your EC2 instance
 
 ### 2. Pull Latest Code
 ```bash
-cd ~/online-fitness-store-P
+cd ~/online-fitness-store-M
 git pull origin main
 ```
 

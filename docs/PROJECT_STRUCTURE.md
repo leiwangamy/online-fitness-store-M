@@ -5,7 +5,7 @@ This document provides a detailed overview of the project structure, explaining 
 ## 📁 Directory Structure
 
 ```
-online-fitness-store-P/
+online-fitness-store-M/
 │
 ├── accounts/                    # User authentication and account management
 │   ├── __init__.py
