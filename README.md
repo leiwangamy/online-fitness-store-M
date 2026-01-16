@@ -5,20 +5,16 @@
 ![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)
 ![AWS](https://img.shields.io/badge/AWS-EC2-orange)
 ![Stripe](https://img.shields.io/badge/Payments-Stripe-6772E5)
-![License](https://img.shields.io/badge/License-Educational-lightgrey)
+![License](https://img.shields.io/badge/License-Proprietary-red)
 
 
-A comprehensive Django-based e-commerce platform for selling fitness products, digital downloads, and services. This project demonstrates a full-stack web application with user authentication, product management, shopping cart, order processing, and deployment to AWS EC2.
+A comprehensive Django-based e-commerce platform for selling fitness products, digital downloads, and services. Built with production-ready features including user authentication, product management, shopping cart, order processing, and AWS EC2 deployment.
 
-## 🔐 Demo Access
+## 🌐 Live Site
 
-**🌐 [Visit Live Site](https://your-domain.com/)**
+**Visit**: [https://your-domain.com/](https://your-domain.com/)
 
-**Demo Credentials:**
-- Email: `demo@fitness-demo.com`
-- Password: `Demo123!`
-
-> ⚠️ **Note**: This is a demo account. All data is reset periodically. The demo account is pre-verified for instant access. In production, email verification is required for all new users.
+> **Note**: Email verification is required for all new user registrations.
 
 
 
@@ -117,9 +113,7 @@ Visit `http://localhost:8000` in your browser.
 - [Configuration](#-configuration)
 - [Development](#-development)
 - [Deployment](#-deployment)
-- [Key Challenges & Solutions](#-key-challenges--solutions)
 - [Documentation](#-documentation)
-- [Contributing](#-contributing)
 
 ## 🛠 Tech Stack
 
@@ -413,54 +407,6 @@ The system supports three product types:
 6. Digital products: Download links generated and emailed
 7. Services: Seats deducted from availability
 
-## 💡 Key Challenges & Solutions
-
-### Challenge: Anonymous Cart Management
-**Problem**: Users should be able to add items to cart before signing in, but cart data needs to persist after login.
-
-**Solution**: 
-- Implemented session-based cart storage for anonymous users
-- Created utility functions (`cart/utils.py`) to manage both session and database carts
-- Used Django signals to automatically transfer session cart items to user's database cart upon login
-- Created context processor to display cart item count globally across all templates
-
-### Challenge: Multi-Product Type Checkout
-**Problem**: Different product types (physical, digital, service) require different checkout flows and validation.
-
-**Solution**: 
-- Created conditional checkout logic that adapts based on cart contents
-- Physical products: Full checkout with shipping/pickup options and address form
-- Digital/Service only: Simplified checkout (order summary only, no shipping)
-- Mixed cart: Full checkout with shipping options for physical items
-
-### Challenge: Featured Products Management
-**Problem**: Admin needs flexible way to manage featured products and customize section content.
-
-**Solution**: 
-- Added `is_featured` boolean flag to Product model for easy admin control
-- Created singleton pattern model (`FeaturedProductsContent`) for admin-editable title and description
-- Implemented efficient querying with `select_related` and `prefetch_related` for optimal performance
-- Limited featured products display to 3 items on home page
-
-### Challenge: Product Image Display
-**Problem**: Product images were being cropped and not displaying completely.
-
-**Solution**: 
-- Changed CSS from `object-fit: cover` to `object-fit: contain`
-- Added white padding wrapper around images to ensure full visibility
-- Implemented responsive image sizing with proper aspect ratio preservation
-
-## 🤝 Contributing
-
-This is a learning project. Feel free to:
-- Fork the repository
-- Create feature branches
-- Submit pull requests
-- Report issues
-
-## 📝 License
-
-This project is for educational purposes.
 
 ## 🙏 Acknowledgments
 
@@ -475,5 +421,5 @@ For questions or issues:
 
 ---
 
-**Note**: This project is production-ready and includes comprehensive error handling, security best practices, and deployment configurations. All code is well-documented for learning purposes.
+**Note**: This platform is production-ready and includes comprehensive error handling, security best practices, and deployment configurations.
 
