@@ -40,18 +40,15 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-load_dotenv(BASE_DIR / ".env")  # loads your .env from project root
-
-
-
 # ------------------------------------------------------------
 # Paths
 # ------------------------------------------------------------
 # Your project is nested like: root/fitness_club/fitness_club/settings.py
 # so parent.parent.parent points to the repo root (where /templates, /static live)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Load .env file from project root
+load_dotenv(BASE_DIR / ".env")  # loads your .env from project root
 
 # ------------------------------------------------------------
 # Core settings
@@ -117,6 +114,7 @@ INSTALLED_APPS = [
     "accounts",
     "core",
     "profiles.apps.ProfilesConfig",
+    "sellers.apps.SellersConfig",
 
 ]
 
@@ -169,16 +167,21 @@ TEMPLATES = [
 # ------------------------------------------------------------
 # Database
 # ------------------------------------------------------------
+# PostgreSQL Database Configuration
+# This points to the fitness_m_user database (the new database)
+# The .env file should have: POSTGRES_DB=fitness_m_user, POSTGRES_USER=fitness_m
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "fitness_club_db"),
-        "USER": os.environ.get("POSTGRES_USER", "fitness_user"),
+        "NAME": os.environ.get("POSTGRES_DB", "fitness_m_user"),
+        "USER": os.environ.get("POSTGRES_USER", "fitness_m"),
         "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "db"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "CONN_MAX_AGE": 0,  # Force connections to close immediately (no persistent connections)
     }
 }
+
 
 # ------------------------------------------------------------
 # Auth / Allauth

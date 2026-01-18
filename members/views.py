@@ -13,6 +13,8 @@ except ImportError:
 
 def membership_plans(request):
     """Public view to show membership plans. Redirects to login when Subscribe is clicked."""
+    from django.db import OperationalError, ProgrammingError
+    
     # If user is authenticated, redirect to the full membership page
     if request.user.is_authenticated:
         return redirect("members:my_membership")
@@ -29,14 +31,27 @@ def membership_plans(request):
     
     # Get content from model (singleton pattern) with fallback
     content = None
-    try:
-        if MembershipPlanContent and hasattr(MembershipPlanContent, 'objects'):
-            content = MembershipPlanContent.get_instance()
-    except (AttributeError, Exception):
-        content = None
+    plans = []
     
-    # Get active membership plans
-    plans = MembershipPlan.objects.filter(is_active=True).order_by('display_order', 'name')
+    try:
+        # Get content from model
+        try:
+            if MembershipPlanContent and hasattr(MembershipPlanContent, 'objects'):
+                content = MembershipPlanContent.get_instance()
+        except (AttributeError, Exception):
+            content = None
+        
+        # Get active membership plans
+        plans = MembershipPlan.objects.filter(is_active=True).order_by('display_order', 'name')
+        
+    except (OperationalError, ProgrammingError):
+        # Database tables don't exist - show static content only
+        plans = []
+        content = None
+    except Exception:
+        # Any other database error - show static content
+        plans = []
+        content = None
     
     # Show public membership plans
     return render(request, "members/membership_plans.html", {
