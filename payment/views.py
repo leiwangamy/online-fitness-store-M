@@ -12,15 +12,36 @@ Key Features:
 - Order creation and processing
 - Digital download generation and email delivery
 
-Checkout Flow:
+Checkout Flow (Safe Payment Flow):
 1. User views cart items and totals
 2. For physical products: Select shipping or pickup, enter shipping address
 3. For digital/service only: Simplified checkout (order summary only)
-4. Order is created with status "paid" (simulated payment)
-5. Digital products: Download links generated and emailed
-6. Services: Seats deducted from availability
-7. Cart is cleared
-8. User redirected to success page
+4. STEP 1: Order is created with status "pending" FIRST (ensures order exists in DB)
+5. STEP 2: ALL OrderItems are created completely (ensures complete order data)
+6. STEP 3: Order integrity is verified (all items saved successfully)
+7. STEP 4: Payment is processed ONLY AFTER order is fully saved
+8. STEP 5: If payment succeeds, order status updated to "paid"
+9. Digital products: Download links generated and emailed (only after payment confirmed)
+10. Services: Seats deducted from availability (only after payment confirmed)
+11. Cart is cleared (only after payment confirmed)
+12. User redirected to success page
+
+CRITICAL SAFETY: Order is ALWAYS saved completely before payment processing begins.
+This prevents the scenario where credit card is charged but order info is not saved.
+
+Safe Order Processing Rules:
+1. Use DB transaction for order creation (transaction.atomic() wrapper)
+   - Order + all OrderItems created atomically (all-or-nothing)
+2. Reserve/hold inventory when order is placed (not after payment)
+   - Inventory/stock decremented IMMEDIATELY when order is created (status="pending")
+   - Prevents two people from buying the last item simultaneously (no overselling)
+   - Inventory is "held" for the pending order until payment succeeds or order expires
+   - Expired orders (>30 minutes): Use `python manage.py expire_pending_orders` to release inventory
+   - Run cleanup command periodically (e.g., every 5-10 minutes via cron/scheduled task)
+3. Prevent double-charging
+   - Use idempotency keys on payment gateway calls
+   - Store payment_intent_id (unique constraint prevents duplicates)
+   - Webhook handler: Check "if order already PAID, do nothing"
 
 Shipping Logic:
 - Physical products: Flat rate shipping or free over threshold
@@ -213,9 +234,10 @@ def checkout(request):
             
             # Create order without shipping address
             with transaction.atomic():
+                # STEP 1: Create order with status "pending" FIRST
                 order = Order.objects.create(
                     user=request.user,
-                    status="paid",
+                    status=Order.STATUS_PENDING,  # Create as "pending" initially
                     subtotal=subtotal,
                     tax=tax,
                     shipping=shipping,
@@ -233,7 +255,10 @@ def checkout(request):
                     ship_country="Canada",
                 )
                 
-                # Create OrderItems and handle digital downloads
+                # STEP 2: Create ALL OrderItems completely BEFORE payment processing
+                # RULE 1: Use DB transaction - order + items created atomically
+                # RULE 2: Reserve/hold inventory when order is placed (not after payment)
+                # This prevents two people from buying the last item simultaneously
                 for i in items:
                     product = i["product"]
                     qty = int(i["quantity"])
@@ -246,9 +271,13 @@ def checkout(request):
                         price=Decimal(str(product.price)),
                     )
                     
-                    # Handle digital products
+                    # RULE 2: Reserve inventory immediately when order is placed
+                    # This holds the inventory and prevents overselling
                     is_digital = bool(getattr(product, "is_digital", False))
+                    is_service = bool(getattr(product, "is_service", False))
+                    
                     if is_digital:
+                        # Log digital product (no inventory to reserve)
                         log_purchase(
                             product=product,
                             quantity=qty,
@@ -257,10 +286,8 @@ def checkout(request):
                             order=order,
                             note=f"Order #{order.id} - Digital product: {product.name} x{qty}"
                         )
-                    
-                    # Handle services
-                    is_service = bool(getattr(product, "is_service", False))
-                    if is_service:
+                    elif is_service:
+                        # Reserve service seats immediately
                         seats = getattr(product, "service_seats", None)
                         if seats is not None:
                             product.refresh_from_db()
@@ -274,17 +301,82 @@ def checkout(request):
                             order=order,
                             note=f"Order #{order.id} - Service: {product.name} x{qty}"
                         )
+                    else:
+                        # Reserve physical product inventory immediately
+                        stock = getattr(product, "quantity_in_stock", None)
+                        if stock is not None:
+                            adjust_inventory(
+                                product=product,
+                                delta=-qty,  # Negative to reduce stock (reserve it)
+                                change_type="ORDER",
+                                created_by=request.user,
+                                order=order,
+                                note=f"Order #{order.id} - {product.name} x{qty} (RESERVED)"
+                            )
                 
-                # Send order confirmation email
-                send_order_confirmation_email(request, order)
+                # STEP 3: Verify all order items are saved successfully
+                order_items_count = order.items.count()
+                if order_items_count == 0:
+                    raise ValueError("Order created but no order items were saved!")
+
+                # STEP 4: Process payment (if you integrate payment gateway like Stripe)
+                # IMPORTANT: Payment should only be processed AFTER order is fully saved
+                # RULE 3: Prevent double-charging with idempotency key
+                import uuid
+                idempotency_key = str(uuid.uuid4())  # Generate unique idempotency key
                 
-                # Create digital downloads and send email (if there are digital products)
-                create_downloads_and_email(request, order)
+                # TODO: Replace with actual payment gateway call (Stripe example):
+                # payment_intent = stripe.PaymentIntent.create(
+                #     amount=int(order.total * 100),  # Convert to cents
+                #     currency='usd',
+                #     idempotency_key=idempotency_key,  # Prevents double-charging
+                #     metadata={'order_id': order.id}
+                # )
+                # payment_successful = payment_intent.status == 'succeeded'
+                # payment_intent_id = payment_intent.id
+                payment_successful = True  # TODO: Replace with actual payment gateway call
+                payment_intent_id = f"test_{order.id}_{idempotency_key[:8]}"  # TODO: Use real payment_intent.id
                 
-                _clear_cart(request)
-                request.session["last_order_id"] = order.id
-                messages.success(request, f"Order #{order.id} placed successfully!")
-                return redirect("payment:success")
+                if payment_successful:
+                    # RULE 3: Check if order already paid (webhook might have updated it)
+                    # Refresh order from DB to check current status
+                    order.refresh_from_db()
+                    if order.status == Order.STATUS_PAID:
+                        # Already paid (e.g., by webhook) - do nothing, prevent double-processing
+                        messages.info(request, f"Order #{order.id} already processed.")
+                        return redirect("payment:success")
+                    
+                    # RULE 3: Store payment_intent_id (unique constraint prevents double-charging)
+                    try:
+                        order.payment_intent_id = payment_intent_id
+                        order.status = Order.STATUS_PAID
+                        order.save(update_fields=['status', 'payment_intent_id'])
+                    except Exception as e:
+                        # payment_intent_id already exists - order was already paid
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Order {order.id} payment_intent_id {payment_intent_id} already exists: {e}")
+                        messages.error(request, "Payment was already processed for this order.")
+                        return redirect("payment:checkout")
+                    
+                    # RULE 2: Inventory was already reserved when order was created (STEP 2)
+                    # No need to decrement again - inventory is held for this order
+                    # If payment fails, inventory remains reserved (could add expiry/cleanup logic later)
+                    
+                    # Send order confirmation email (only after payment confirmed)
+                    send_order_confirmation_email(request, order)
+                    
+                    # Create digital downloads and send email (if there are digital products)
+                    create_downloads_and_email(request, order)
+                    
+                    _clear_cart(request)
+                    request.session["last_order_id"] = order.id
+                    messages.success(request, f"Order #{order.id} placed successfully!")
+                    return redirect("payment:success")
+                else:
+                    # Payment failed - order remains "pending"
+                    messages.error(request, "Payment processing failed. Please try again.")
+                    return redirect("payment:checkout")
         
         # For GET requests, show simplified checkout (no shipping form)
         return render(
@@ -463,9 +555,12 @@ def checkout(request):
             else:
                 locked_products = {}
 
+            # STEP 1: Create order with status "pending" FIRST
+            # This ensures order exists in database before any payment processing
+            # Payment should only be processed AFTER order is fully saved
             order = Order.objects.create(
                 user=request.user,
-                status="paid",  # make sure your model choices use "paid" (lowercase) if that's what you set
+                status=Order.STATUS_PENDING,  # Create as "pending" initially
                 subtotal=subtotal,
                 tax=tax,
                 shipping=shipping,
@@ -475,7 +570,10 @@ def checkout(request):
                 **shipping_data,  # works if your Order has these fields
             )
 
-            # Create OrderItems and update inventory
+            # STEP 2: Create ALL OrderItems completely BEFORE payment processing
+            # RULE 1: Use DB transaction - order + items created atomically
+            # RULE 2: Reserve/hold inventory when order is placed (not after payment)
+            # This prevents two people from buying the last item simultaneously
             for i in items:
                 product = i["product"]
                 qty = int(i["quantity"])
@@ -488,11 +586,12 @@ def checkout(request):
                     quantity=qty,
                     price=Decimal(str(product.price)),  # unit price at purchase
                 )
-
-                # Inventory update and logging
+                
+                # RULE 2: Reserve inventory immediately when order is placed
+                # This holds the inventory and prevents overselling
                 is_digital = bool(getattr(product, "is_digital", False))
                 is_service = bool(getattr(product, "is_service", False))
-
+                
                 if is_digital:
                     # Log digital product purchase (no stock to update)
                     log_purchase(
@@ -504,16 +603,15 @@ def checkout(request):
                         note=f"Order #{order.id} - Digital product: {product.name} x{qty}"
                     )
                     continue
-
+                
                 if is_service:
-                    # For services, update service_seats
+                    # Reserve service seats immediately
                     seats = getattr(product, "service_seats", None)
                     if seats is not None:
                         # Refresh from DB to get latest value
                         product.refresh_from_db()
                         product.service_seats = max(0, getattr(product, "service_seats", 0) - qty)
                         product.save(update_fields=["service_seats"])
-                    # Log service purchase (no physical stock to update)
                     log_purchase(
                         product=product,
                         quantity=qty,
@@ -523,34 +621,93 @@ def checkout(request):
                         note=f"Order #{order.id} - Service: {product.name} x{qty}"
                     )
                     continue
-
-                # For physical products, update quantity_in_stock using adjust_inventory
-                # This will update stock and create an inventory log entry
+                
+                # Reserve physical product inventory immediately
                 stock = getattr(product, "quantity_in_stock", None)
                 if stock is not None:
                     # Use the product instance (adjust_inventory will handle the update safely)
                     # We already checked stock availability earlier, so this should be safe
                     adjust_inventory(
                         product=product,
-                        delta=-qty,  # Negative to reduce stock
+                        delta=-qty,  # Negative to reduce stock (reserve it)
                         change_type="ORDER",
                         created_by=request.user,
                         order=order,
-                        note=f"Order #{order.id} - {product.name} x{qty}"
+                        note=f"Order #{order.id} - {product.name} x{qty} (RESERVED)"
                     )
 
-            # Send order confirmation email
-            send_order_confirmation_email(request, order)
+            # STEP 3: Verify all order items are saved successfully
+            # This ensures order data integrity before payment
+            order_items_count = order.items.count()
+            if order_items_count == 0:
+                raise ValueError("Order created but no order items were saved!")
+
+            # STEP 4: Process payment (if you integrate payment gateway like Stripe)
+            # IMPORTANT: Payment should only be processed AFTER order is fully saved
+            # RULE 3: Prevent double-charging with idempotency key
+            import uuid
+            idempotency_key = str(uuid.uuid4())  # Generate unique idempotency key
             
-            # Create DigitalDownload rows + send email (if there are digital products)
-            # (your service already uses get_or_create so it's safe)
-            create_downloads_and_email(request, order, days_valid=7, max_downloads=0)
+            # TODO: Replace with actual payment gateway call (Stripe example):
+            # payment_intent = stripe.PaymentIntent.create(
+            #     amount=int(order.total * 100),  # Convert to cents
+            #     currency='usd',
+            #     idempotency_key=idempotency_key,  # Prevents double-charging
+            #     metadata={'order_id': order.id}
+            # )
+            # payment_successful = payment_intent.status == 'succeeded'
+            # payment_intent_id = payment_intent.id
+            payment_successful = True  # TODO: Replace with actual payment gateway call
+            payment_intent_id = f"test_{order.id}_{idempotency_key[:8]}"  # TODO: Use real payment_intent.id
+            
+            if payment_successful:
+                # RULE 3: Check if order already paid (webhook might have updated it)
+                # Refresh order from DB to check current status
+                order.refresh_from_db()
+                if order.status == Order.STATUS_PAID:
+                    # Already paid (e.g., by webhook) - do nothing, prevent double-processing
+                    messages.info(request, f"Order #{order.id} already processed.")
+                    return redirect("payment:success")
+                
+                # RULE 3: Store payment_intent_id (unique constraint prevents double-charging)
+                try:
+                    order.payment_intent_id = payment_intent_id
+                    order.status = Order.STATUS_PAID
+                    order.save(update_fields=['status', 'payment_intent_id'])
+                except Exception as e:
+                    # payment_intent_id already exists - order was already paid
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Order {order.id} payment_intent_id {payment_intent_id} already exists: {e}")
+                    messages.error(request, "Payment was already processed for this order.")
+                    return redirect("payment:checkout")
+                
+                # RULE 2: Inventory was already reserved when order was created (STEP 2)
+                # No need to decrement again - inventory is held for this order
+                # If payment fails, inventory remains reserved (could add expiry/cleanup logic later)
+                
+                # Send order confirmation email (only after payment confirmed)
+                send_order_confirmation_email(request, order)
+                
+                # Create DigitalDownload rows + send email (if there are digital products)
+                # (your service already uses get_or_create so it's safe)
+                create_downloads_and_email(request, order, days_valid=7, max_downloads=0)
 
-            _clear_cart(request)
+                _clear_cart(request)
 
-        request.session["last_order_id"] = order.id
-        messages.success(request, f"Order #{order.id} placed successfully!")
-        return redirect("payment:success")
+                request.session["last_order_id"] = order.id
+                messages.success(request, f"Order #{order.id} placed successfully!")
+                return redirect("payment:success")
+            else:
+                # Payment failed - order remains "pending"
+                # You can handle this case (show error, retry payment, etc.)
+                messages.error(request, "Payment processing failed. Please try again.")
+                # Optionally: delete the pending order or mark it for retry
+                return redirect("payment:checkout")
+
+        # If we get here, transaction failed - order was not saved
+        messages.error(request, "Failed to create order. Please try again.")
+        return redirect("payment:checkout")
 
     # ---------------- GET: show checkout ---------------- 
     # Get profile for displaying default address

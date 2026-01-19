@@ -13,11 +13,32 @@
       {% if user.is_authenticated %}
         👤 You are logged in as <strong>{{ user.username }}</strong>
       {% endif %}
+      {% if user.is_staff and has_pending_refunds %}
+        <span style="margin-left: 20px; background: #ffc107; color: #856404; padding: 5px 10px; border-radius: 4px; font-weight: bold;">
+          ⚠ Refund Requests ({{ pending_refunds_count }})
+        </span>
+        <a href="{% url 'admin:orders_refund_changelist' %}?status__exact=requested" style="margin-left: 10px; color: #856404; text-decoration: underline;">
+          → Review
+        </a>
+      {% endif %}
     </div>
   </div>
+{% endblock %}
+
+{% block content %}
+  {% if user.is_staff and has_pending_refunds %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 10px 0; border-radius: 4px;">
+      <strong style="color: #856404;">⚠ You have {{ pending_refunds_count }} pending refund request{{ pending_refunds_count|pluralize }}.</strong>
+      <a href="{% url 'admin:orders_refund_changelist' %}?status__exact=requested" style="margin-left: 10px; color: #856404; text-decoration: underline; font-weight: bold;">
+        → Review Refund Requests
+      </a>
+    </div>
+  {% endif %}
+  {{ block.super }}
 {% endblock %}
 
 {% block extrahead %}
   {{ block.super }}
   <link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
 {% endblock %}
+

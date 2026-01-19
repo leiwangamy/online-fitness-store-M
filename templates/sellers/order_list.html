@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Orders - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .order-list-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+
+  .order-card {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #2d6a4f;
+  }
+
+  .order-header h3 {
+    margin: 0;
+    color: #2d6a4f;
+  }
+
+  .order-status {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+
+  .status-pending { background: #fff3cd; color: #856404; }
+  .status-paid { background: #d1ecf1; color: #0c5460; }
+  .status-processing { background: #cce5ff; color: #004085; }
+  .status-shipped { background: #d4edda; color: #155724; }
+  .status-delivered { background: #d1f2eb; color: #00695c; }
+  .status-cancelled { background: #f8d7da; color: #721c24; }
+
+  .order-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  .info-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 4px;
+  }
+
+  .info-value {
+    font-weight: bold;
+    color: #333;
+  }
+
+  .order-items {
+    margin-top: 15px;
+  }
+
+  .order-items table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .order-items th,
+  .order-items td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  .order-items th {
+    background: #f5f5f5;
+    font-weight: bold;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 10px;
+    margin-top: 10px;
+  }
+
+  .btn-primary {
+    background: #2d6a4f;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #1b4332;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .filter-section {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .filter-section select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-right: 10px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="order-list-container">
+    <h1>Orders</h1>
+    
+    <a href="{% url 'sellers:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    
+    <div class="filter-section">
+        <form method="get" style="display: inline-block;">
+            <label for="status">Filter by Status:</label>
+            <select name="status" id="status" onchange="this.form.submit()">
+                <option value="">All Orders</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    
+    {% if page_obj %}
+        {% for order in page_obj %}
+            <div class="order-card">
+                <div class="order-header">
+                    <h3><a href="{% url 'sellers:order_detail' order.id %}" style="color: #2d6a4f; text-decoration: none;">Order #{{ order.id }}</a></h3>
+                    <span class="order-status status-{{ order.status }}">{{ order.get_status_display }}</span>
+                </div>
+                
+                <div class="order-info">
+                    <div class="info-item">
+                        <span class="info-label">Customer</span>
+                        <span class="info-value">{{ order.user.get_full_name|default:order.user.email|default:"Guest" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date</span>
+                        <span class="info-value">{{ order.created_at|date:"M d, Y H:i" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Fulfillment</span>
+                        <span class="info-value">{% if order.is_pickup %}Pickup{% else %}Shipping{% endif %}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total</span>
+                        <span class="info-value">${{ order.total|floatformat:2 }}</span>
+                    </div>
+                </div>
+                
+                {% if order.tracking_number %}
+                <div class="info-item" style="margin-top: 10px;">
+                    <span class="info-label">Tracking</span>
+                    <span class="info-value">{{ order.tracking_number }} {% if order.shipping_carrier %}({{ order.get_shipping_carrier_display }}){% endif %}</span>
+                </div>
+                {% endif %}
+                
+                <div class="order-items">
+                    <h4>Your Products in This Order:</h4>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Your Earnings</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                                {% if item.seller == seller %}
+                                <tr>
+                                    <td>{{ item.product.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>${{ item.price|floatformat:2 }}</td>
+                                    <td>${{ item.seller_earnings|floatformat:2 }}</td>
+                                </tr>
+                                {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <a href="{% url 'sellers:order_detail' order.id %}" class="btn btn-primary">View Details & Update Status</a>
+            </div>
+        {% endfor %}
+        
+        {% if page_obj.has_other_pages %}
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">Previous</a>
+                {% endif %}
+                <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    {% else %}
+        <p>No orders found.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

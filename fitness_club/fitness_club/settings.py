@@ -159,6 +159,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "members.context_processors.membership_context",
                 "cart.context_processors.cart_context",
+                "orders.context_processors.staff_notifications",  # Staff notifications (refund requests)
             ],
         },
     },

@@ -43,6 +43,7 @@ class ProductAdmin(admin.ModelAdmin):
         "id",
         "name",
         "category",
+        "seller",
         "price",
         "product_type",
         "availability_display",
@@ -53,6 +54,7 @@ class ProductAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "category",
+        "seller",
         "is_active",
         "is_featured",
         "charge_gst",
@@ -60,12 +62,12 @@ class ProductAdmin(admin.ModelAdmin):
         "is_digital",
         "is_service",
     )
-    search_fields = ("name",)
-    list_select_related = ("category",)
+    search_fields = ("name", "seller__display_name", "seller__user__email")
+    list_select_related = ("category", "seller", "seller__user")
     inlines = [ProductImageInline, ProductVideoInline, ProductAudioInline]
 
     fieldsets = (
-        ("Basic Info", {"fields": ("name", "description", "price", "is_active", "is_featured", "category")}),
+        ("Basic Info", {"fields": ("name", "description", "price", "is_active", "is_featured", "category", "seller")}),
         ("Tax & Stock", {"fields": ("quantity_in_stock", "charge_gst", "charge_pst")}),
         ("Digital Product", {
             "fields": ("is_digital", "digital_file", "digital_url"),

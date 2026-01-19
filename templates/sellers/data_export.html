@@ -1,0 +1,421 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Data Export - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .export-container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .export-section {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .export-section h2 {
+        margin-top: 0;
+        color: #2d6a4f;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+    }
+    
+    .export-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    
+    .export-option {
+        padding: 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+        background: white;
+        position: relative;
+    }
+    
+    .export-option:hover {
+        border-color: #2d6a4f;
+        background: #f0f7f4;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .export-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .export-option label {
+        cursor: pointer;
+        font-weight: 600;
+        display: block;
+        color: #333;
+        font-size: 1rem;
+        margin: 0;
+    }
+    
+    .export-option input[type="radio"]:checked ~ label,
+    .export-option input[type="radio"]:checked {
+        border-color: #2d6a4f;
+        background: #e8f5e9;
+    }
+    
+    .export-option.selected {
+        border-color: #2d6a4f;
+        background: #e8f5e9;
+        box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.2);
+    }
+    
+    .format-options {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+    
+    .format-option {
+        padding: 8px 16px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    
+    .format-option:hover {
+        border-color: #2d6a4f;
+        background: #f0f7f4;
+    }
+    
+    .format-option input[type="radio"] {
+        margin-right: 6px;
+    }
+    
+    .format-option.selected {
+        border-color: #2d6a4f;
+        background: #2d6a4f;
+        color: white;
+    }
+    
+    .filter-section {
+        margin-top: 25px;
+        padding-top: 25px;
+        border-top: 1px solid #eee;
+    }
+    
+    .filter-section h3 {
+        margin-top: 0;
+        color: #333;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #2d6a4f;
+        box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.1);
+    }
+    
+    .export-button {
+        background: #2d6a4f;
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s;
+        margin-top: 20px;
+    }
+    
+    .export-button:hover {
+        background: #1e4a35;
+    }
+    
+    .export-button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .back-link {
+        display: inline-block;
+        margin-bottom: 20px;
+        color: #2d6a4f;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    
+    .info-text {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 10px;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="export-container">
+    <h1>Data Export</h1>
+    <a href="{% url 'sellers:dashboard' %}" class="back-link">← Back to Dashboard</a>
+    
+    <form method="get" id="exportForm">
+        <div class="export-section">
+            <h2>Select Export Type</h2>
+            <div class="export-options">
+                <label class="export-option {% if export_type == 'orders' %}selected{% endif %}" for="export_orders">
+                    <input type="radio" name="export_type" value="orders" id="export_orders" 
+                           {% if export_type == 'orders' %}checked{% endif %}
+                           onchange="toggleFilters()">
+                    <span>Export Orders</span>
+                </label>
+                
+                <label class="export-option {% if export_type == 'products' %}selected{% endif %}" for="export_products">
+                    <input type="radio" name="export_type" value="products" id="export_products"
+                           {% if export_type == 'products' %}checked{% endif %}
+                           onchange="toggleFilters()">
+                    <span>Export Products</span>
+                </label>
+                
+                <label class="export-option {% if export_type == 'refunds' %}selected{% endif %}" for="export_refunds">
+                    <input type="radio" name="export_type" value="refunds" id="export_refunds"
+                           {% if export_type == 'refunds' %}checked{% endif %}
+                           onchange="toggleFilters()">
+                    <span>Export Refunds</span>
+                </label>
+                
+                <label class="export-option {% if export_type == 'statement' %}selected{% endif %}" for="export_statement">
+                    <input type="radio" name="export_type" value="statement" id="export_statement"
+                           {% if export_type == 'statement' %}checked{% endif %}
+                           onchange="toggleFilters()">
+                    <span>Export Statement</span>
+                </label>
+            </div>
+            
+            <div id="formatSection" style="display: none; margin-top: 20px;">
+                <h3 style="margin-bottom: 10px; color: #333; font-size: 1.1rem;">Export Format</h3>
+                <div class="format-options">
+                    <label class="format-option {% if not export_format or export_format == 'csv' %}selected{% endif %}" for="format_csv">
+                        <input type="radio" name="export_format" value="csv" id="format_csv" 
+                               {% if not export_format or export_format == 'csv' %}checked{% endif %}
+                               onchange="updateFormatSelection()">
+                        CSV
+                    </label>
+                    {% if excel_available %}
+                    <label class="format-option {% if export_format == 'excel' %}selected{% endif %}" for="format_excel">
+                        <input type="radio" name="export_format" value="excel" id="format_excel"
+                               {% if export_format == 'excel' %}checked{% endif %}
+                               onchange="updateFormatSelection()">
+                        Excel
+                    </label>
+                    {% endif %}
+                    <label class="format-option {% if export_format == 'json' %}selected{% endif %}" for="format_json">
+                        <input type="radio" name="export_format" value="json" id="format_json"
+                               {% if export_format == 'json' %}checked{% endif %}
+                               onchange="updateFormatSelection()">
+                        JSON
+                    </label>
+                    {% if pdf_available %}
+                    <label class="format-option {% if export_format == 'pdf' %}selected{% endif %}" for="format_pdf" id="pdf_option" style="display: none;">
+                        <input type="radio" name="export_format" value="pdf" id="format_pdf"
+                               {% if export_format == 'pdf' %}checked{% endif %}
+                               onchange="updateFormatSelection()">
+                        PDF
+                    </label>
+                    {% endif %}
+                </div>
+                {% if not excel_available or not pdf_available %}
+                <p class="info-text" style="margin-top: 10px;">
+                    {% if not excel_available %}Excel format requires <code>openpyxl</code> package. {% endif %}
+                    {% if not pdf_available %}PDF format requires <code>reportlab</code> package. {% endif %}
+                    Install missing packages to enable additional formats.
+                </p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="export-section">
+            <div class="filter-section">
+                <h3>Filters</h3>
+                
+                <div id="dateFilters" class="filter-row" style="display: none;">
+                    <div class="form-group">
+                        <label for="start_date">Start Date</label>
+                        <input type="date" name="start_date" id="start_date" value="{{ start_date }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date</label>
+                        <input type="date" name="end_date" id="end_date" value="{{ end_date }}">
+                    </div>
+                </div>
+                
+                <div id="statusFilter" class="form-group" style="display: none;">
+                    <label for="status">Status</label>
+                    <select name="status" id="status">
+                        <option value="">All Statuses</option>
+                        {% for value, label in order_status_choices %}
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="productFilter" class="form-group" style="display: none;">
+                    <label for="product">Product</label>
+                    <select name="product" id="product">
+                        <option value="">All Products</option>
+                        {% for product in seller_products %}
+                            <option value="{{ product.id }}" {% if product_filter == product.id|stringformat:"s" %}selected{% endif %}>{{ product.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div id="productStatusFilter" class="form-group" style="display: none;">
+                    <label for="product_status">Product Status</label>
+                    <select name="status" id="product_status">
+                        <option value="">All Products</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active Only</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                    </select>
+                    <p class="info-text">Filter products by active/inactive status</p>
+                </div>
+            </div>
+            
+            <button type="submit" name="generate" value="true" class="export-button" id="exportBtn" disabled>
+                Generate Export File
+            </button>
+            <p class="info-text">Select an export type above to enable the export button.</p>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleFilters() {
+        const exportType = document.querySelector('input[name="export_type"]:checked')?.value;
+        const dateFilters = document.getElementById('dateFilters');
+        const statusFilter = document.getElementById('statusFilter');
+        const productFilter = document.getElementById('productFilter');
+        const productStatusFilter = document.getElementById('productStatusFilter');
+        const exportBtn = document.getElementById('exportBtn');
+        const formatSection = document.getElementById('formatSection');
+        const pdfOption = document.getElementById('pdf_option');
+        
+        // Update selected state for export options
+        document.querySelectorAll('.export-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        const selectedOption = document.querySelector(`input[name="export_type"]:checked`);
+        if (selectedOption) {
+            selectedOption.closest('.export-option').classList.add('selected');
+        }
+        
+        // Hide all filters first
+        dateFilters.style.display = 'none';
+        statusFilter.style.display = 'none';
+        productFilter.style.display = 'none';
+        if (productStatusFilter) {
+            productStatusFilter.style.display = 'none';
+        }
+        
+        // Show PDF option only for statements
+        if (pdfOption) {
+            pdfOption.style.display = exportType === 'statement' ? 'inline-block' : 'none';
+            if (exportType !== 'statement' && document.getElementById('format_pdf').checked) {
+                document.getElementById('format_csv').checked = true;
+                updateFormatSelection();
+            }
+        }
+        
+        // Show relevant filters based on export type
+        if (exportType === 'orders') {
+            dateFilters.style.display = 'grid';
+            statusFilter.style.display = 'block';
+            productFilter.style.display = 'block';
+            formatSection.style.display = 'block';
+            exportBtn.disabled = false;
+        } else if (exportType === 'products') {
+            if (productStatusFilter) {
+                productStatusFilter.style.display = 'block';
+            }
+            formatSection.style.display = 'block';
+            exportBtn.disabled = false;
+        } else if (exportType === 'refunds') {
+            dateFilters.style.display = 'grid';
+            statusFilter.style.display = 'block';
+            formatSection.style.display = 'block';
+            exportBtn.disabled = false;
+        } else if (exportType === 'statement') {
+            dateFilters.style.display = 'grid';
+            formatSection.style.display = 'block';
+            exportBtn.disabled = false;
+        } else {
+            formatSection.style.display = 'none';
+            exportBtn.disabled = true;
+        }
+    }
+    
+    function updateFormatSelection() {
+        document.querySelectorAll('.format-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        const selectedFormat = document.querySelector('input[name="export_format"]:checked');
+        if (selectedFormat) {
+            selectedFormat.closest('.format-option').classList.add('selected');
+        }
+    }
+    
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleFilters();
+        updateFormatSelection();
+    });
+</script>
+{% endblock %}
+

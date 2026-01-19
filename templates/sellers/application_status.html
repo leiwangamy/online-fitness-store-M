@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Seller Application Status - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Seller Application Status</h1>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="card">
+        <h2>Your Application</h2>
+        
+        <p><strong>Display Name:</strong> {{ seller.display_name|default:"Not set" }}</p>
+        {% if seller.business_name %}
+            <p><strong>Business Name:</strong> {{ seller.business_name }}</p>
+        {% endif %}
+        {% if seller.business_description %}
+            <p><strong>Description:</strong> {{ seller.business_description }}</p>
+        {% endif %}
+        <p><strong>Status:</strong> 
+            <span class="badge badge-{% if seller.status == 'APPROVED' %}success{% elif seller.status == 'REJECTED' %}danger{% else %}warning{% endif %}">
+                {{ seller.get_status_display }}
+            </span>
+        </p>
+        <p><strong>Submitted:</strong> {{ seller.created_at|date:"F d, Y" }}</p>
+    </div>
+    
+    {% if seller.status == 'PENDING' %}
+        <div class="alert alert-info">
+            <strong>Your application is pending approval.</strong><br>
+            We're reviewing your application and will notify you once it's been processed.
+            You'll be able to add products once your application is approved.
+        </div>
+    {% elif seller.status == 'APPROVED' %}
+        <div class="alert alert-success">
+            <strong>Congratulations! Your application has been approved.</strong><br>
+            You can now start adding products to your seller dashboard.
+        </div>
+        <a href="{% url 'sellers:dashboard' %}" class="btn btn-primary">Go to Seller Dashboard</a>
+    {% elif seller.status == 'REJECTED' %}
+        <div class="alert alert-danger">
+            <strong>Your application was rejected.</strong><br>
+            If you believe this is an error, please contact our support team.
+        </div>
+    {% endif %}
+    
+    <p><a href="{% url 'home:home' %}">Back to Home</a></p>
+</div>
+{% endblock %}
+

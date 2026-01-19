@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login as auth_login
@@ -29,7 +31,10 @@ def signup(request):
     return render(request, "account/signup.html", {"form": form})
 
 
+@require_http_methods(["GET", "POST"])
+@csrf_exempt  # Allow logout via GET for convenience (user is logging out anyway)
 def logout_view(request):
+    """Logout view that handles both GET and POST requests"""
     if request.user.is_authenticated:
         logout(request)
         messages.success(request, "You have been logged out.")

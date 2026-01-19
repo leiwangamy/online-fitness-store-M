@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Add Product - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .product-form-card {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 40px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .form-group {
+    margin-bottom: 25px;
+  }
+
+  .form-group label {
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+  }
+
+  .form-group input[type="text"],
+  .form-group input[type="number"],
+  .form-group input[type="url"],
+  .form-group input[type="file"],
+  .form-group input[type="date"],
+  .form-group input[type="time"],
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    font-family: inherit;
+  }
+
+  .form-group input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+  }
+
+  .form-group .form-text {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+  }
+
+  .form-group .text-danger {
+    color: #dc3545;
+    font-size: 0.9rem;
+    margin-top: 6px;
+  }
+
+  .section-header {
+    color: #2d6a4f;
+    font-size: 1.3rem;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2d6a4f;
+  }
+
+  button[type="submit"] {
+    padding: 14px 24px;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-right: 10px;
+  }
+
+  button[type="submit"]:hover {
+    background: #1b4332;
+  }
+
+  .btn-secondary {
+    padding: 14px 24px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    display: inline-block;
+    margin-top: 10px;
+  }
+
+  .btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="product-form-card">
+    <h1>Add New Product</h1>
+    
+    <a href="{% url 'sellers:product_list' %}" class="btn-secondary">Back to Products</a>
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <h2 class="section-header">Basic Information</h2>
+        {% for field in form %}
+            {% if field.name not in 'is_digital,is_service,digital_file,digital_url,service_availability,service_seats,service_date,service_time,service_duration_minutes,service_location,product_images,product_video_file,product_video_url,product_audio_file,product_audio_url' %}
+                {% if field.name != 'seller' %}
+                <div class="form-group">
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                        {% if field.field.required %} <span style="color: red;">*</span>{% endif %}
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-text">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-danger">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        
+        <h2 class="section-header">Product Type</h2>
+        <div class="form-group">
+            <label>
+                {{ form.is_digital }}
+                {{ form.is_digital.label }}
+            </label>
+            {% if form.is_digital.help_text %}
+                <small class="form-text">{{ form.is_digital.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group" id="digital-fields" style="display: none;">
+            <label for="{{ form.digital_file.id_for_label }}">{{ form.digital_file.label }}</label>
+            {{ form.digital_file }}
+            {% if form.digital_file.help_text %}
+                <small class="form-text">{{ form.digital_file.help_text }}</small>
+            {% endif %}
+            
+            <label for="{{ form.digital_url.id_for_label }}" style="margin-top: 15px;">{{ form.digital_url.label }}</label>
+            {{ form.digital_url }}
+            {% if form.digital_url.help_text %}
+                <small class="form-text">{{ form.digital_url.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label>
+                {{ form.is_service }}
+                {{ form.is_service.label }}
+            </label>
+            {% if form.is_service.help_text %}
+                <small class="form-text">{{ form.is_service.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <div class="form-group" id="service-fields" style="display: none;">
+            <label for="{{ form.service_availability.id_for_label }}">{{ form.service_availability.label }}</label>
+            {{ form.service_availability }}
+            {% if form.service_availability.help_text %}
+                <small class="form-text">{{ form.service_availability.help_text }}</small>
+            {% endif %}
+            
+            <label for="{{ form.service_seats.id_for_label }}" style="margin-top: 15px;">{{ form.service_seats.label }}</label>
+            {{ form.service_seats }}
+            {% if form.service_seats.help_text %}
+                <small class="form-text">{{ form.service_seats.help_text }}</small>
+            {% endif %}
+            
+            <label for="{{ form.service_date.id_for_label }}" style="margin-top: 15px;">{{ form.service_date.label }}</label>
+            {{ form.service_date }}
+            
+            <label for="{{ form.service_time.id_for_label }}" style="margin-top: 15px;">{{ form.service_time.label }}</label>
+            {{ form.service_time }}
+            
+            <label for="{{ form.service_duration_minutes.id_for_label }}" style="margin-top: 15px;">{{ form.service_duration_minutes.label }}</label>
+            {{ form.service_duration_minutes }}
+            {% if form.service_duration_minutes.help_text %}
+                <small class="form-text">{{ form.service_duration_minutes.help_text }}</small>
+            {% endif %}
+            
+            <label for="{{ form.service_location.id_for_label }}" style="margin-top: 15px;">{{ form.service_location.label }}</label>
+            {{ form.service_location }}
+            {% if form.service_location.help_text %}
+                <small class="form-text">{{ form.service_location.help_text }}</small>
+            {% endif %}
+        </div>
+        
+        <h2 class="section-header">Product Media</h2>
+        
+        {# Product Images Formset #}
+        <div class="formset-container" id="images-formset">
+            <h3 style="color: #2d6a4f; margin-top: 20px; margin-bottom: 15px;">Product Images</h3>
+            {{ image_formset.management_form }}
+            <div id="images-formset-forms">
+                {% for form in image_formset %}
+                    <div class="formset-form" data-form-index="{{ forloop.counter0 }}">
+                        <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 6px; background: #f9f9f9;">
+                            {% if form.DELETE %}
+                                <div style="float: right;">
+                                    <label style="color: #dc3545; cursor: pointer;">
+                                        {{ form.DELETE }} Delete
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if form.id %}{{ form.id }}{% endif %}
+                            
+                            <div class="form-group">
+                                <label>{{ form.image.label }}</label>
+                                {{ form.image }}
+                                {% if form.image.help_text %}<small class="form-text">{{ form.image.help_text }}</small>{% endif %}
+                                {% if form.image.errors %}<div class="text-danger">{{ form.image.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.alt_text.label }}</label>
+                                {{ form.alt_text }}
+                                {% if form.alt_text.help_text %}<small class="form-text">{{ form.alt_text.help_text }}</small>{% endif %}
+                            </div>
+                            
+                            <div style="display: flex; gap: 15px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label>{{ form.display_order.label }}</label>
+                                    {{ form.display_order }}
+                                </div>
+                                <div class="form-group" style="flex: 1; padding-top: 30px;">
+                                    <label style="display: flex; align-items: center; gap: 8px;">
+                                        {{ form.is_main }} {{ form.is_main.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="add-formset-row" data-formset-prefix="images" style="margin-bottom: 20px; padding: 8px 16px; background: #2d6a4f; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Another Image</button>
+            {% if image_formset.non_form_errors %}
+                <div class="text-danger">{{ image_formset.non_form_errors }}</div>
+            {% endif %}
+        </div>
+        
+        {# Product Videos Formset #}
+        <div class="formset-container" id="videos-formset">
+            <h3 style="color: #2d6a4f; margin-top: 20px; margin-bottom: 15px;">Product Videos</h3>
+            {{ video_formset.management_form }}
+            <div id="videos-formset-forms">
+                {% for form in video_formset %}
+                    <div class="formset-form" data-form-index="{{ forloop.counter0 }}">
+                        <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 6px; background: #f9f9f9;">
+                            {% if form.DELETE %}
+                                <div style="float: right;">
+                                    <label style="color: #dc3545; cursor: pointer;">
+                                        {{ form.DELETE }} Delete
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if form.id %}{{ form.id }}{% endif %}
+                            
+                            <div class="form-group">
+                                <label>{{ form.title.label }}</label>
+                                {{ form.title }}
+                                {% if form.title.help_text %}<small class="form-text">{{ form.title.help_text }}</small>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.video_file.label }}</label>
+                                {{ form.video_file }}
+                                {% if form.video_file.help_text %}<small class="form-text">{{ form.video_file.help_text }}</small>{% endif %}
+                                {% if form.video_file.errors %}<div class="text-danger">{{ form.video_file.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.video_url.label }}</label>
+                                {{ form.video_url }}
+                                {% if form.video_url.help_text %}<small class="form-text">{{ form.video_url.help_text }}</small>{% endif %}
+                                {% if form.video_url.errors %}<div class="text-danger">{{ form.video_url.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.display_order.label }}</label>
+                                {{ form.display_order }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="add-formset-row" data-formset-prefix="videos" style="margin-bottom: 20px; padding: 8px 16px; background: #2d6a4f; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Another Video</button>
+            {% if video_formset.non_form_errors %}
+                <div class="text-danger">{{ video_formset.non_form_errors }}</div>
+            {% endif %}
+        </div>
+        
+        {# Product Audio Formset #}
+        <div class="formset-container" id="audios-formset">
+            <h3 style="color: #2d6a4f; margin-top: 20px; margin-bottom: 15px;">Product Audio</h3>
+            {{ audio_formset.management_form }}
+            <div id="audios-formset-forms">
+                {% for form in audio_formset %}
+                    <div class="formset-form" data-form-index="{{ forloop.counter0 }}">
+                        <div style="border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 6px; background: #f9f9f9;">
+                            {% if form.DELETE %}
+                                <div style="float: right;">
+                                    <label style="color: #dc3545; cursor: pointer;">
+                                        {{ form.DELETE }} Delete
+                                    </label>
+                                </div>
+                            {% endif %}
+                            {% if form.id %}{{ form.id }}{% endif %}
+                            
+                            <div class="form-group">
+                                <label>{{ form.title.label }}</label>
+                                {{ form.title }}
+                                {% if form.title.help_text %}<small class="form-text">{{ form.title.help_text }}</small>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.audio_file.label }}</label>
+                                {{ form.audio_file }}
+                                {% if form.audio_file.help_text %}<small class="form-text">{{ form.audio_file.help_text }}</small>{% endif %}
+                                {% if form.audio_file.errors %}<div class="text-danger">{{ form.audio_file.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.audio_url.label }}</label>
+                                {{ form.audio_url }}
+                                {% if form.audio_url.help_text %}<small class="form-text">{{ form.audio_url.help_text }}</small>{% endif %}
+                                {% if form.audio_url.errors %}<div class="text-danger">{{ form.audio_url.errors }}</div>{% endif %}
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>{{ form.display_order.label }}</label>
+                                {{ form.display_order }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="add-formset-row" data-formset-prefix="audios" style="margin-bottom: 20px; padding: 8px 16px; background: #2d6a4f; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Add Another Audio</button>
+            {% if audio_formset.non_form_errors %}
+                <div class="text-danger">{{ audio_formset.non_form_errors }}</div>
+            {% endif %}
+        </div>
+        
+        <button type="submit">Save Product</button>
+        <a href="{% url 'sellers:product_list' %}" class="btn-secondary">Cancel</a>
+    </form>
+</div>
+
+<script>
+  // Auto-hide and auto-show fields based on product type (copied from admin logic)
+  window.addEventListener("load", function () {
+    const isServiceCheckbox = document.querySelector("#{{ form.is_service.id_for_label }}");
+    const isDigitalCheckbox = document.querySelector("#{{ form.is_digital.id_for_label }}");
+    const stockField = document.querySelector("#{{ form.quantity_in_stock.id_for_label }}")?.closest(".form-group");
+    const digitalFieldsDiv = document.getElementById("digital-fields");
+    const serviceFieldsDiv = document.getElementById("service-fields");
+    const serviceAvailabilitySelect = document.querySelector("#{{ form.service_availability.id_for_label }}");
+    const serviceSeatsField = document.querySelector("#{{ form.service_seats.id_for_label }}")?.closest(".form-group") || 
+                              document.querySelector("#{{ form.service_seats.id_for_label }}")?.parentElement;
+    const serviceDateField = document.querySelector("#{{ form.service_date.id_for_label }}")?.closest(".form-group") ||
+                             document.querySelector("#{{ form.service_date.id_for_label }}")?.parentElement;
+    const serviceTimeField = document.querySelector("#{{ form.service_time.id_for_label }}")?.closest(".form-group") ||
+                             document.querySelector("#{{ form.service_time.id_for_label }}")?.parentElement;
+    const serviceDurationField = document.querySelector("#{{ form.service_duration_minutes.id_for_label }}")?.closest(".form-group") ||
+                                document.querySelector("#{{ form.service_duration_minutes.id_for_label }}")?.parentElement;
+    const serviceLocationField = document.querySelector("#{{ form.service_location.id_for_label }}")?.closest(".form-group") ||
+                                 document.querySelector("#{{ form.service_location.id_for_label }}")?.parentElement;
+
+    function updateVisibility() {
+      const isService = isServiceCheckbox?.checked;
+      const isDigital = isDigitalCheckbox?.checked;
+
+      // --- Logic ---
+
+      // 1. SERVICE PRODUCT → hide quantity, show service fields
+      if (isService) {
+        // Hide stock field
+        if (stockField) {
+          stockField.style.display = "none";
+          stockField.style.opacity = "0.5";
+        }
+        
+        // Show service fields
+        if (serviceFieldsDiv) serviceFieldsDiv.style.display = "block";
+        
+        // Hide digital fields
+        if (digitalFieldsDiv) digitalFieldsDiv.style.display = "none";
+        
+        // Handle service availability dropdown - show/hide service_seats based on selection
+        if (serviceAvailabilitySelect && serviceSeatsField) {
+          const availability = serviceAvailabilitySelect.value;
+          if (availability === "limited") {
+            serviceSeatsField.style.display = "block";
+            serviceSeatsField.style.opacity = "1";
+          } else {
+            serviceSeatsField.style.display = "none";
+          }
+        }
+      }
+
+      // 2. DIGITAL PRODUCT → hide quantity, hide service fields
+      else if (isDigital) {
+        // Hide stock field
+        if (stockField) {
+          stockField.style.display = "none";
+          stockField.style.opacity = "0.5";
+        }
+        
+        // Hide service fields
+        if (serviceFieldsDiv) serviceFieldsDiv.style.display = "none";
+        
+        // Show digital fields
+        if (digitalFieldsDiv) digitalFieldsDiv.style.display = "block";
+      }
+
+      // 3. PHYSICAL PRODUCT → show stock, hide service and digital
+      else {
+        // Show stock field
+        if (stockField) {
+          stockField.style.display = "block";
+          stockField.style.opacity = "1";
+        }
+        
+        // Hide service fields
+        if (serviceFieldsDiv) serviceFieldsDiv.style.display = "none";
+        
+        // Hide digital fields
+        if (digitalFieldsDiv) digitalFieldsDiv.style.display = "none";
+      }
+    }
+
+    // Event listeners
+    isServiceCheckbox?.addEventListener("change", updateVisibility);
+    isDigitalCheckbox?.addEventListener("change", updateVisibility);
+    
+    if (serviceAvailabilitySelect) {
+      serviceAvailabilitySelect.addEventListener("change", updateVisibility);
+    }
+
+    // Initial load
+    updateVisibility();
+  });
+  
+  // Formset management - Add new rows dynamically (similar to Django admin inlines)
+  document.addEventListener('DOMContentLoaded', function() {
+    const formsetPrefixes = ['images', 'videos', 'audios'];
+    
+    formsetPrefixes.forEach(function(prefix) {
+      const addButton = document.querySelector(`.add-formset-row[data-formset-prefix="${prefix}"]`);
+      const formsContainer = document.getElementById(`${prefix}-formset-forms`);
+      const managementForm = document.querySelector(`#${prefix}-formset input[name$="-TOTAL_FORMS"]`);
+      const emptyFormTemplate = document.querySelector(`#${prefix}-formset .formset-form:last-child`)?.cloneNode(true);
+      
+      if (!addButton || !formsContainer || !managementForm) return;
+      
+      // Store the empty form template
+      if (emptyFormTemplate) {
+        emptyFormTemplate.style.display = 'none';
+        formsContainer.appendChild(emptyFormTemplate);
+      }
+      
+      addButton.addEventListener('click', function() {
+        const totalForms = parseInt(managementForm.value);
+        const newForm = emptyFormTemplate.cloneNode(true);
+        
+        // Update form indices
+        newForm.querySelectorAll('input, select, textarea').forEach(function(input) {
+          if (input.name) {
+            input.name = input.name.replace(/-\d+-/, `-${totalForms}-`);
+            input.id = input.id.replace(/-\d+-/, `-${totalForms}-`);
+          }
+        });
+        
+        // Update form index data attribute
+        newForm.setAttribute('data-form-index', totalForms);
+        
+        // Clear values
+        newForm.querySelectorAll('input[type="text"], input[type="number"], input[type="url"], input[type="file"], textarea').forEach(function(input) {
+          if (input.type !== 'checkbox' && input.type !== 'hidden') {
+            input.value = '';
+          }
+        });
+        
+        // Uncheck checkboxes
+        newForm.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+          checkbox.checked = false;
+        });
+        
+        // Show the new form
+        newForm.style.display = 'block';
+        
+        // Insert before the empty template
+        formsContainer.insertBefore(newForm, emptyFormTemplate);
+        
+        // Update total forms count
+        managementForm.value = totalForms + 1;
+      });
+      
+      // Handle delete checkboxes - hide forms when deleted
+      formsContainer.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox' && e.target.name && e.target.name.includes('-DELETE')) {
+          const formRow = e.target.closest('.formset-form');
+          if (formRow) {
+            const formContainer = formRow.querySelector('div[style*="border"]');
+            if (e.target.checked) {
+              // Hide the form visually but keep it in DOM for form submission
+              if (formContainer) {
+                formContainer.style.display = 'none';
+                formContainer.style.opacity = '0.3';
+              }
+              // Disable all inputs except DELETE and ID to prevent validation errors
+              formRow.querySelectorAll('input, select, textarea').forEach(function(input) {
+                if (input.name && !input.name.includes('-DELETE') && !input.name.includes('-id') && input.type !== 'hidden') {
+                  input.disabled = true;
+                  input.required = false;
+                }
+              });
+              // Keep DELETE and ID fields enabled so they're submitted
+              formRow.querySelectorAll('input[name*="-DELETE"], input[name*="-id"]').forEach(function(input) {
+                input.disabled = false;
+              });
+            } else {
+              // Show the form again if delete is unchecked
+              if (formContainer) {
+                formContainer.style.display = 'block';
+                formContainer.style.opacity = '1';
+              }
+              // Re-enable all inputs
+              formRow.querySelectorAll('input, select, textarea').forEach(function(input) {
+                input.disabled = false;
+              });
+            }
+          }
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
+

@@ -1,10 +1,18 @@
 import os
 from django.contrib import admin
+from django.contrib.auth import logout
+from django.contrib import messages
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import HttpResponse
 from django.views.static import serve
+from django.shortcuts import redirect
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+
+# Ensure all admin.py files are discovered
+admin.autodiscover()
 
 
 def health_check(request):
@@ -12,8 +20,19 @@ def health_check(request):
     return HttpResponse("ok", content_type="text/plain")
 
 
+@require_http_methods(["GET", "POST"])
+@csrf_exempt
+def admin_logout(request):
+    """Custom admin logout view that handles both GET and POST without CSRF issues"""
+    if request.user.is_authenticated:
+        logout(request)
+        messages.success(request, "You have been logged out.")
+    return redirect("admin:index")
+
+
 urlpatterns = [
     path("health/", health_check, name="health"),
+    path("admin/logout/", admin_logout, name="admin_logout"),
     path("admin/", admin.site.urls),
 
     # Include accounts app first so it can override allauth URLs (accessed with namespace "accounts")
@@ -40,6 +59,9 @@ urlpatterns = [
     path("cart/", include(("cart.urls", "cart"), namespace="cart")),
     path("orders/", include(("orders.urls", "orders"), namespace="orders")),
     path("payment/", include(("payment.urls", "payment"), namespace="payment")),
+    
+    # sellers app
+    path("seller/", include(("sellers.urls", "sellers"), namespace="sellers")),
 ]
 
 # Serve media files (in production, consider using nginx or a CDN)

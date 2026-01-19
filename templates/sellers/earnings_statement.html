@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Statement - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .statement-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+
+  .statement-header {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+
+  .statement-header h1 {
+    color: #2d6a4f;
+    margin-top: 0;
+    margin-bottom: 5px;
+  }
+
+  .statement-header .subtext {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+  }
+
+  .date-filter-section {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+  }
+
+  .date-filter-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .date-filter-row select,
+  .date-filter-row input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.95rem;
+  }
+
+  .date-filter-row select {
+    min-width: 150px;
+  }
+
+  .date-filter-row input[type="date"] {
+    min-width: 140px;
+  }
+
+  .btn-apply {
+    padding: 8px 20px;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-apply:hover {
+    background: #1b4332;
+  }
+
+  .period-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+
+  .period-summary h2 {
+    color: #2d6a4f;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+  }
+
+  .period-summary .date-range {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+
+  .summary-item {
+    text-align: center;
+    padding: 15px;
+    background: #f9f9f9;
+    border-radius: 6px;
+  }
+
+  .summary-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+
+  .summary-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .summary-value.in {
+    color: #2d6a4f;
+  }
+
+  .summary-value.out {
+    color: #dc3545;
+  }
+
+  .summary-value.net {
+    color: #333;
+  }
+
+  .transaction-section {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+
+  .transaction-section h2 {
+    color: #2d6a4f;
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+
+  .transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  .transaction-table th,
+  .transaction-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  .transaction-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+  }
+
+  .transaction-table tr:hover {
+    background: #f9f9f9;
+  }
+
+  .transaction-table .amount-in {
+    color: #2d6a4f;
+    font-weight: bold;
+  }
+
+  .transaction-table .amount-out {
+    color: #dc3545;
+    font-weight: bold;
+  }
+
+  .transaction-table .balance {
+    font-weight: bold;
+  }
+
+  .tax-summary {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+  }
+
+  .tax-summary h2 {
+    color: #2d6a4f;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+  }
+
+  .tax-toggle {
+    margin-bottom: 15px;
+  }
+
+  .tax-toggle label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #2d6a4f;
+  }
+
+  .tax-details {
+    display: none;
+    margin-top: 15px;
+  }
+
+  .tax-details.show {
+    display: block;
+  }
+
+  .tax-details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+  }
+
+  .tax-details-table th,
+  .tax-details-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  .tax-details-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+  }
+
+  .export-section {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .btn-export {
+    padding: 12px 24px;
+    background: #2d6a4f;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .btn-export:hover {
+    background: #1b4332;
+  }
+
+  .btn-secondary {
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 20px;
+  }
+
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="statement-container">
+    <div class="statement-header">
+        <h1>Statement</h1>
+        <p class="subtext">View your earnings activity for a selected period</p>
+    </div>
+    
+    <a href="{% url 'sellers:dashboard' %}" class="btn-secondary">Back to Dashboard</a>
+    
+    <div class="date-filter-section">
+        <form method="get" id="dateFilterForm">
+            <div class="date-filter-row">
+                <select name="period" id="period" onchange="toggleCustomDates()">
+                    <option value="today" {% if period == 'today' %}selected{% endif %}>Today</option>
+                    <option value="last_7_days" {% if period == 'last_7_days' %}selected{% endif %}>Last 7 days</option>
+                    <option value="this_month" {% if period == 'this_month' %}selected{% endif %}>This month</option>
+                    <option value="last_month" {% if period == 'last_month' %}selected{% endif %}>Last month</option>
+                    <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom range</option>
+                </select>
+                
+                <div id="customDates" style="display: {% if period == 'custom' %}flex{% else %}none{% endif %}; gap: 10px;">
+                    <input type="date" name="date_from" value="{{ date_from }}" placeholder="From">
+                    <input type="date" name="date_to" value="{{ date_to }}" placeholder="To">
+                </div>
+                
+                <button type="submit" class="btn-apply">Apply</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="period-summary">
+        <h2>Period Summary</h2>
+        <div class="date-range">({{ start_date|date:"M d, Y" }} – {{ end_date|date:"M d, Y" }})</div>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">Total In</div>
+                <div class="summary-value in">${{ total_in|floatformat:2 }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total Out</div>
+                <div class="summary-value out">${{ total_out|floatformat:2 }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Net Change</div>
+                <div class="summary-value net">${{ net_change|floatformat:2 }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="transaction-section">
+        <h2>Transaction Log</h2>
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th style="text-align: right;">In</th>
+                    <th style="text-align: right;">Out</th>
+                    <th style="text-align: right;">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.date|date:"M d, Y" }}</td>
+                    <td>
+                        {% if t.type == 'order' %}
+                            <a href="{% url 'sellers:order_detail' t.order_id %}" style="color: #2d6a4f;">{{ t.description }}</a>
+                        {% else %}
+                            {{ t.description }}
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        {% if t.in > 0 %}
+                            <span class="amount-in">${{ t.in|floatformat:2 }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        {% if t.out > 0 %}
+                            <span class="amount-out">${{ t.out|floatformat:2 }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;" class="balance">${{ t.balance|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #666; padding: 30px;">No transactions in this period.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="tax-summary">
+        <h2>Tax Summary (for reference)</h2>
+        <div class="date-range">({{ start_date|date:"M d, Y" }} – {{ end_date|date:"M d, Y" }})</div>
+        
+        <div class="tax-toggle">
+            <label>
+                <input type="checkbox" id="showTaxDetails" onchange="toggleTaxDetails()">
+                Show tax details
+            </label>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
+            <div class="summary-item">
+                <div class="summary-label">GST Collected</div>
+                <div class="summary-value" style="color: #2d6a4f;">${{ total_gst|floatformat:2 }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">PST Collected</div>
+                <div class="summary-value" style="color: #2d6a4f;">${{ total_pst|floatformat:2 }}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Total Tax Collected</div>
+                <div class="summary-value" style="color: #2d6a4f;">${{ total_tax|floatformat:2 }}</div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 15px; padding: 12px; background: #f0f0f0; border-radius: 4px; font-size: 0.85rem; color: #666; line-height: 1.5;">
+            <strong>Note:</strong> Taxes are collected on behalf of sellers.<br>
+            Sellers are responsible for tax reporting and remittance.
+        </div>
+        
+        <div class="tax-details" id="taxDetails">
+            <table class="tax-details-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th style="text-align: right;">GST</th>
+                        <th style="text-align: right;">PST</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                        {% if t.type == 'order' and t.gst > 0 or t.pst > 0 %}
+                        <tr>
+                            <td><a href="{% url 'sellers:order_detail' t.order_id %}">#{{ t.order_id }}</a></td>
+                            <td style="text-align: right;">${{ t.gst|floatformat:2 }}</td>
+                            <td style="text-align: right;">${{ t.pst|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #666;">No tax collected in this period.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="export-section">
+        <a href="?period={{ period }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}&export=csv" class="btn-export">Export CSV</a>
+    </div>
+</div>
+
+<script>
+  function toggleCustomDates() {
+    const periodSelect = document.getElementById('period');
+    const customDates = document.getElementById('customDates');
+    if (periodSelect.value === 'custom') {
+      customDates.style.display = 'flex';
+    } else {
+      customDates.style.display = 'none';
+    }
+  }
+  
+  function toggleTaxDetails() {
+    const checkbox = document.getElementById('showTaxDetails');
+    const details = document.getElementById('taxDetails');
+    if (checkbox.checked) {
+      details.classList.add('show');
+    } else {
+      details.classList.remove('show');
+    }
+  }
+</script>
+{% endblock %}

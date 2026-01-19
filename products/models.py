@@ -21,6 +21,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from django.conf import settings
+from sellers.models import Seller
 
 # =========================
 #  CATEGORY
@@ -109,6 +110,15 @@ class Product(models.Model):
         null=True,
         blank=True,
         related_name="products",
+    )
+    
+    seller = models.ForeignKey(
+        Seller,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="products",
+        help_text="Seller who owns this product"
     )
 
     name = models.CharField(max_length=200)

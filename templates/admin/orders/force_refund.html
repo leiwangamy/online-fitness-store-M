@@ -1,0 +1,107 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block title %}Force Refund - Order #{{ order.id }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:orders_order_changelist' %}">Orders</a>
+    &rsaquo; <a href="{% url 'admin:orders_order_change' order.id %}">Order #{{ order.id }}</a>
+    &rsaquo; Force Refund
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>Force Refund - Order #{{ order.id }}</h1>
+
+<p><strong>Admin Override:</strong> Create a refund even if the seller has not requested it.</p>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    
+    <fieldset class="module aligned">
+        <h2>Refund Details</h2>
+        
+        <div class="form-row">
+            <div>
+                <label for="{{ form.order_item.id_for_label }}">{{ form.order_item.label }}:</label>
+                {{ form.order_item }}
+                {% if form.order_item.help_text %}
+                    <p class="help">{{ form.order_item.help_text }}</p>
+                {% endif %}
+                {% if form.order_item.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.order_item.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div>
+                <label for="{{ form.seller.id_for_label }}">{{ form.seller.label }}:</label>
+                {{ form.seller }}
+                {% if form.seller.help_text %}
+                    <p class="help">{{ form.seller.help_text }}</p>
+                {% endif %}
+                {% if form.seller.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.seller.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div>
+                <label for="{{ form.amount.id_for_label }}">{{ form.amount.label }}:</label>
+                {{ form.amount }}
+                {% if form.amount.help_text %}
+                    <p class="help">{{ form.amount.help_text }}</p>
+                {% endif %}
+                {% if form.amount.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.amount.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div>
+                <label for="{{ form.reason.id_for_label }}">{{ form.reason.label }}:</label>
+                {{ form.reason }}
+                {% if form.reason.help_text %}
+                    <p class="help">{{ form.reason.help_text }}</p>
+                {% endif %}
+                {% if form.reason.errors %}
+                    <ul class="errorlist">
+                        {% for error in form.reason.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+    </fieldset>
+    
+    <div class="submit-row">
+        <input type="submit" value="Create Refund" class="default" name="_save">
+        <a href="{% url 'admin:orders_order_change' order.id %}" class="button">Cancel</a>
+    </div>
+</form>
+{% endblock %}
+

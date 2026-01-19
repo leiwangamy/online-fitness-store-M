@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Order #{{ order.id }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .order-detail-container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+  }
+
+  .order-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .order-section h2 {
+    color: #2d6a4f;
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #2d6a4f;
+  }
+
+  .order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .order-status {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+
+  .status-pending { background: #fff3cd; color: #856404; }
+  .status-paid { background: #d1ecf1; color: #0c5460; }
+  .status-processing { background: #cce5ff; color: #004085; }
+  .status-shipped { background: #d4edda; color: #155724; }
+  .status-delivered { background: #d1f2eb; color: #00695c; }
+  .status-cancelled { background: #f8d7da; color: #721c24; }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .info-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .info-label {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: bold;
+  }
+
+  .info-value {
+    color: #333;
+    padding: 8px;
+    background: #f9f9f9;
+    border-radius: 4px;
+  }
+
+  .address-box {
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #2d6a4f;
+    margin-top: 10px;
+    line-height: 1.8;
+  }
+
+  .address-box strong {
+    color: #2d6a4f;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+
+  .items-table th,
+  .items-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+  }
+
+  .items-table th {
+    background: #f5f5f5;
+    font-weight: bold;
+  }
+
+  .items-table tr:hover {
+    background: #f9f9f9;
+  }
+
+  .status-update-form {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 6px;
+    margin-top: 20px;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .form-group label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+  }
+
+  .form-group select,
+  .form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-block;
+    margin-right: 10px;
+    margin-top: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+
+  .btn-primary {
+    background: #2d6a4f;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #1b4332;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+
+  .totals-box {
+    background: #e8f5e9;
+    padding: 15px;
+    border-radius: 6px;
+    margin-top: 15px;
+  }
+
+  .totals-box .total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #c8e6c9;
+  }
+
+  .totals-box .total-row:last-child {
+    border-bottom: none;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-top: 10px;
+    padding-top: 15px;
+    border-top: 2px solid #2d6a4f;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="order-detail-container">
+    <h1>Order #{{ order.id }}</h1>
+    
+    <a href="{% url 'sellers:order_list' %}" class="btn btn-secondary">Back to Orders</a>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}" style="padding: 12px; margin: 15px 0; border-radius: 4px; background: {% if message.tags == 'success' %}#d4edda{% elif message.tags == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %};">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="order-section">
+        <div class="order-header">
+            <h2>Order Information</h2>
+            <span class="order-status status-{{ order.status }}">{{ order.get_status_display }}</span>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-group">
+                <span class="info-label">Order ID</span>
+                <span class="info-value">#{{ order.id }}</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Customer</span>
+                <span class="info-value">{{ order.user.get_full_name|default:order.user.email|default:"Guest" }}</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Order Date</span>
+                <span class="info-value">{{ order.created_at|date:"F d, Y H:i" }}</span>
+            </div>
+            <div class="info-group">
+                <span class="info-label">Fulfillment Method</span>
+                <span class="info-value">{% if order.is_pickup %}Pickup{% else %}Shipping{% endif %}</span>
+            </div>
+            {% if order.tracking_number %}
+            <div class="info-group">
+                <span class="info-label">Tracking Number</span>
+                <span class="info-value">{{ order.tracking_number }}</span>
+            </div>
+            {% endif %}
+            {% if order.shipping_carrier %}
+            <div class="info-group">
+                <span class="info-label">Shipping Carrier</span>
+                <span class="info-value">{{ order.get_shipping_carrier_display }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="order-section">
+        <h2>Shipping/Pickup Address</h2>
+        <div class="address-box">
+            {% if order.is_pickup and order.pickup_location %}
+                <strong>PICKUP LOCATION:</strong>
+                {{ order.pickup_location.name }}<br>
+                {% if order.pickup_location.phone %}Phone: {{ order.pickup_location.phone }}<br>{% endif %}
+                {{ order.pickup_location.address1 }}<br>
+                {% if order.pickup_location.address2 %}{{ order.pickup_location.address2 }}<br>{% endif %}
+                {{ order.pickup_location.city }}, {{ order.pickup_location.province }} {{ order.pickup_location.postal_code }}<br>
+                {{ order.pickup_location.country }}<br>
+                {% if order.pickup_location.instructions %}
+                    <br><strong>Instructions:</strong><br>
+                    {{ order.pickup_location.instructions }}
+                {% endif %}
+            {% else %}
+                <strong>SHIPPING ADDRESS:</strong>
+                {% if order.ship_name %}{{ order.ship_name }}<br>{% endif %}
+                {% if order.ship_phone %}Phone: {{ order.ship_phone }}<br>{% endif %}
+                {% if order.ship_address1 %}{{ order.ship_address1 }}<br>{% endif %}
+                {% if order.ship_address2 %}{{ order.ship_address2 }}<br>{% endif %}
+                {% if order.ship_city or order.ship_province or order.ship_postal_code %}
+                    {{ order.ship_city }}{% if order.ship_province %}, {{ order.ship_province }}{% endif %} {{ order.ship_postal_code }}<br>
+                {% endif %}
+                {% if order.ship_country %}{{ order.ship_country }}{% endif %}
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="order-section">
+        <h2>Your Products in This Order</h2>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Line Total</th>
+                    <th>Platform Fee</th>
+                    <th>Your Earnings</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order_items %}
+                <tr>
+                    <td>
+                        {{ item.product.name }}
+                        {% if not item.refund_allowed and item.refund_reason %}
+                            <br><small style="color: #dc3545;">({{ item.refund_reason }})</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.price|floatformat:2 }}</td>
+                    <td>${{ item.line_total|floatformat:2 }}</td>
+                    <td>${{ item.platform_fee|floatformat:2 }}</td>
+                    <td><strong>${{ item.seller_earnings|floatformat:2 }}</strong></td>
+                    <td>
+                        {% if item.refund_allowed %}
+                            <button type="button" 
+                                    class="btn btn-primary refund-btn" 
+                                    data-item-id="{{ item.id }}"
+                                    data-auto-refund="{{ item.refund_mode|yesno:'auto,request' }}">
+                                {% if item.refund_mode == "auto" %}
+                                    Refund
+                                {% else %}
+                                    Request Refund
+                                {% endif %}
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="totals-box">
+            <div class="total-row">
+                <span>Subtotal (Your Products):</span>
+                <span>${{ seller_subtotal|floatformat:2 }}</span>
+            </div>
+            <div class="total-row">
+                <span>Platform Fees:</span>
+                <span>-${{ seller_platform_fees|floatformat:2 }}</span>
+            </div>
+            <div class="total-row">
+                <span>Your Total Earnings:</span>
+                <span>${{ seller_earnings|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="order-section">
+        <h2>Update Order Status</h2>
+        <form method="post" class="status-update-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="status">Order Status *</label>
+                <select name="status" id="status" required>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color: #666; display: block; margin-top: 5px;">You can update status to "Processing" or "Shipped"</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="tracking_number">Tracking Number</label>
+                <input type="text" name="tracking_number" id="tracking_number" value="{{ order.tracking_number }}" placeholder="Enter tracking number">
+            </div>
+            
+            <div class="form-group">
+                <label for="shipping_carrier">Shipping Carrier</label>
+                <select name="shipping_carrier" id="shipping_carrier">
+                    <option value="">-- Select Carrier --</option>
+                    {% for value, label in carrier_choices %}
+                        <option value="{{ value }}" {% if order.shipping_carrier == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Update Order Status</button>
+        </form>
+    </div>
+    
+    {% if seller_refunds %}
+    <div class="order-section">
+        <h2>Refund History</h2>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for refund in seller_refunds %}
+                <tr>
+                    <td>{{ refund.created_at|date:"M d, Y H:i" }}</td>
+                    <td>${{ refund.amount|floatformat:2 }}</td>
+                    <td>
+                        <span class="order-status status-{{ refund.status }}">
+                            {{ refund.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ refund.reason|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const refundButtons = document.querySelectorAll('.refund-btn');
+    
+    refundButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const itemId = this.getAttribute('data-item-id');
+            const autoRefund = this.getAttribute('data-auto-refund') === 'true';
+            const reason = prompt('Enter refund reason (optional):') || 'Seller initiated refund';
+            
+            if (reason === null) return; // User cancelled
+            
+            // Disable button during processing
+            this.disabled = true;
+            this.textContent = 'Processing...';
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('reason', reason);
+            formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+            
+            // Make AJAX request
+            fetch(`{% url 'sellers:refund_order_item' 0 %}`.replace('0', itemId), {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    alert(data.message || 'Refund processed successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                    this.disabled = false;
+                    this.textContent = autoRefund ? 'Refund' : 'Request Refund';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                this.disabled = false;
+                this.textContent = autoRefund ? 'Refund' : 'Request Refund';
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+

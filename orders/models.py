@@ -60,6 +60,7 @@ from django.db import models
 from django.utils import timezone
 
 from products.models import Product
+from sellers.models import Seller
 
 
 def default_expiry():
@@ -119,6 +120,9 @@ class Order(models.Model):
     STATUS_SHIPPED = "shipped"
     STATUS_DELIVERED = "delivered"
     STATUS_CANCELLED = "cancelled"
+    STATUS_REFUNDED = "refunded"
+    STATUS_PARTIALLY_REFUNDED = "partially_refunded"
+    STATUS_DISPUTED = "disputed"
 
     STATUS_CHOICES = [
         (STATUS_PENDING, "Pending"),
@@ -127,6 +131,9 @@ class Order(models.Model):
         (STATUS_SHIPPED, "Shipped"),
         (STATUS_DELIVERED, "Delivered"),
         (STATUS_CANCELLED, "Cancelled"),
+        (STATUS_REFUNDED, "Refunded"),
+        (STATUS_PARTIALLY_REFUNDED, "Partially Refunded"),
+        (STATUS_DISPUTED, "Disputed"),
     ]
 
     CARRIER_CANADAPOST = "canadapost"
@@ -155,6 +162,23 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+
+    # Payment tracking (prevents double-charging)
+    # Note: null=True allows existing orders, unique=True prevents duplicate payment intents
+    # Empty strings are not unique, but actual payment_intent_ids must be unique
+    payment_intent_id = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        null=True,
+        unique=True,
+        help_text="Stripe payment intent ID or other payment gateway ID (unique to prevent double-charging)"
+    )
+    
+    # Alias for payment_intent_id (for compatibility with refund code)
+    @property
+    def stripe_payment_intent_id(self):
+        return self.payment_intent_id or ""
 
     tracking_number = models.CharField(max_length=100, blank=True, default="")
     shipping_carrier = models.CharField(max_length=20, choices=CARRIER_CHOICES, blank=True, default="")
@@ -259,6 +283,36 @@ class OrderItem(models.Model):
         blank=True,
         help_text="Unit price at time of purchase"
     )
+    
+    seller = models.ForeignKey(
+        Seller,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="order_items",
+        help_text="Seller who owns this product"
+    )
+    
+    line_total = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Total for this line item (price * quantity)"
+    )
+    
+    platform_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Platform commission fee"
+    )
+    
+    seller_earnings = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Amount seller earns after commission"
+    )
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
@@ -266,6 +320,124 @@ class OrderItem(models.Model):
     @property
     def subtotal(self) -> Decimal:
         return (self.price or Decimal("0.00")) * self.quantity
+    
+    def save(self, *args, **kwargs):
+        """
+        Automatically calculate seller, line_total, platform_fee, and seller_earnings
+        when saving OrderItem.
+        """
+        # Set seller from product
+        if self.product and self.product.seller:
+            self.seller = self.product.seller
+        
+        # Calculate line_total (unit_price * quantity)
+        unit_price = self.price or Decimal("0.00")
+        qty = self.quantity or 0
+        self.line_total = unit_price * qty
+        
+        # Calculate commission if seller exists
+        if self.seller and self.line_total > Decimal("0.00"):
+            # Platform fee = line_total * commission_rate
+            self.platform_fee = self.line_total * self.seller.commission_rate
+            # Seller earnings = line_total - platform_fee
+            self.seller_earnings = self.line_total - self.platform_fee
+        else:
+            # No seller or zero total - no commission
+            self.platform_fee = Decimal("0.00")
+            self.seller_earnings = self.line_total  # Seller gets full amount if no commission
+        
+        super().save(*args, **kwargs)
+
+
+class Refund(models.Model):
+    """
+    Refund model for tracking order refunds.
+    
+    Status flow:
+    - requested: Seller or customer requested refund, awaiting admin approval
+    - approved: Admin approved, ready to process
+    - rejected: Admin rejected the refund request
+    - processing: Refund is being processed (Stripe call in progress)
+    - succeeded: Refund completed successfully
+    - failed: Refund processing failed
+    """
+    STATUS_REQUESTED = "requested"
+    STATUS_APPROVED = "approved"
+    STATUS_REJECTED = "rejected"
+    STATUS_PROCESSING = "processing"
+    STATUS_SUCCEEDED = "succeeded"
+    STATUS_FAILED = "failed"
+    
+    STATUS_CHOICES = [
+        (STATUS_REQUESTED, "Requested"),
+        (STATUS_APPROVED, "Approved"),
+        (STATUS_REJECTED, "Rejected"),
+        (STATUS_PROCESSING, "Processing"),
+        (STATUS_SUCCEEDED, "Succeeded"),
+        (STATUS_FAILED, "Failed"),
+    ]
+    
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.PROTECT,
+        related_name="refunds",
+        help_text="Order being refunded"
+    )
+    seller = models.ForeignKey(
+        'sellers.Seller',
+        on_delete=models.PROTECT,
+        related_name="refunds",
+        help_text="Seller who owns the product being refunded"
+    )
+    order_item = models.ForeignKey(
+        'OrderItem',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="refunds",
+        help_text="Specific order item being refunded (null for full order refunds)"
+    )
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Refund amount (in CAD)"
+    )
+    reason = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Reason for refund"
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="refunds_created",
+        help_text="User who initiated the refund"
+    )
+    status = models.CharField(
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_REQUESTED,
+        help_text="Current refund status"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Stripe refund ID
+    stripe_refund_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Stripe refund ID after processing"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Refund"
+        verbose_name_plural = "Refunds"
+    
+    def __str__(self):
+        return f"Refund #{self.id} - Order #{self.order.id} - ${self.amount} ({self.get_status_display()})"
 
 
 class DigitalDownload(models.Model):
