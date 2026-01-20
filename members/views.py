@@ -149,15 +149,23 @@ def seller_membership_plans(request):
                 # Redirect to manage subscription page
                 return redirect("members:manage_subscription")
     
-    # Get active seller membership plans
+    # Get active seller membership plans, grouped by seller
     seller_plans = []
+    seller_intros = {}  # Dictionary to store intro text per seller
     try:
         from sellers.models import SellerMembershipPlan
         seller_plans = SellerMembershipPlan.objects.filter(is_active=True).select_related('seller').order_by('seller__display_name', 'display_order', 'name')
+        # Get unique sellers and their intro texts
+        for plan in seller_plans:
+            seller_id = plan.seller.id
+            if seller_id not in seller_intros:
+                seller_intros[seller_id] = plan.seller.membership_intro_text or "Choose a seller membership plan that fits your needs."
     except (OperationalError, ProgrammingError):
         seller_plans = []
+        seller_intros = {}
     except Exception:
         seller_plans = []
+        seller_intros = {}
     
     # Get user's current seller membership status if logged in
     current_membership = None
@@ -187,6 +195,7 @@ def seller_membership_plans(request):
     # Show seller membership plans
     return render(request, "members/seller_membership_plans.html", {
         "seller_plans": seller_plans,
+        "seller_intros": seller_intros,
         "current_membership": current_membership,
         "current_seller_plan": current_seller_plan,
         "is_member": is_member,

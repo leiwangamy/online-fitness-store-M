@@ -12,6 +12,20 @@
         <a href="{% url 'sellers:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
     </div>
     
+    <!-- Membership Page Settings -->
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0;">
+        <h2 style="margin-top: 0; color: #2d6a4f;">Membership Page Settings</h2>
+        <form method="post" style="margin-top: 15px;">
+            {% csrf_token %}
+            <div style="margin-bottom: 15px;">
+                <label for="intro_text" style="display: block; margin-bottom: 5px; font-weight: bold;">Introduction Text</label>
+                <textarea id="intro_text" name="intro_text" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; font-family: inherit;">{{ seller.membership_intro_text|default:"Choose a seller membership plan that fits your needs." }}</textarea>
+                <small style="color: #666;">This text appears at the top of your membership plans page for customers.</small>
+            </div>
+            <button type="submit" name="update_intro" class="btn btn-primary">Save Intro Text</button>
+        </form>
+    </div>
+    
     {% if plans %}
         <div style="margin: 20px 0;">
             <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">

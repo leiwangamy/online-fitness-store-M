@@ -1802,6 +1802,14 @@ def membership_plans_list(request):
     seller = request.user.seller
     plans = SellerMembershipPlan.objects.filter(seller=seller).order_by('display_order', 'name')
     
+    # Handle intro text update
+    if request.method == 'POST' and 'update_intro' in request.POST:
+        intro_text = request.POST.get('intro_text', '').strip()
+        seller.membership_intro_text = intro_text
+        seller.save()
+        messages.success(request, 'Membership page intro text has been updated successfully!')
+        return redirect('sellers:membership_plans_list')
+    
     return render(request, 'sellers/membership_plans_list.html', {
         'plans': plans,
         'seller': seller,

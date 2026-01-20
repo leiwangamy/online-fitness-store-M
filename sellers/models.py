@@ -55,6 +55,13 @@ class Seller(models.Model):
     business_name = models.CharField(max_length=200, blank=True, help_text="Optional business name")
     business_description = models.TextField(blank=True, help_text="Optional business description")
     
+    # Membership page intro text
+    membership_intro_text = models.TextField(
+        blank=True,
+        default="Choose a seller membership plan that fits your needs.",
+        help_text="Introduction text shown at the top of your membership plans page"
+    )
+    
     # Stripe Connect account (for future payment processing)
     stripe_account_id = models.CharField(
         max_length=255,
