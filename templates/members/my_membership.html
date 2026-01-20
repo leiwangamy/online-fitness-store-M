@@ -152,7 +152,12 @@
     {% for plan in plans %}
       <div class="plan">
         <div class="plan-content">
-          <h3>{{ plan.name }}</h3>
+          <h3>
+            {{ plan.name }}
+            {% if plan.seller %}
+              <span style="font-size: 0.7em; color: #666; font-weight: normal;">({{ plan.seller.display_name|default:plan.seller.user.username }})</span>
+            {% endif %}
+          </h3>
           <div class="plan-description">{{ plan.description|safe }}</div>
           {% if plan.details %}
             <div class="plan-details">{{ plan.details|safe }}</div>
@@ -161,26 +166,65 @@
         <div class="plan-button-container">
           <p class="plan-price"><strong>{{ plan.price_display }}</strong></p>
           {% if profile.is_active_member %}
-              {% if profile.membership_level == plan.slug %}
+              {% if plan.seller %}
+                {# Seller plan - check if it matches current seller plan #}
+                {% if current_seller_plan and current_seller_plan.id == plan.id %}
                   <div style="margin-bottom: 10px;">
                     <span style="padding: 8px 14px; border-radius: 6px; background: #e9f5e9; border: 1px solid #2d6a4f; color: #2d6a4f; font-weight: bold; display: inline-block;">Current Plan</span>
                   </div>
                   <a href="{% url 'members:manage_subscription' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
                     Manage Subscription
                   </a>
+                {% else %}
+                  <form method="post" action="{% url 'members:my_membership' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_slug" value="{{ plan.get_full_slug }}">
+                    <input type="hidden" name="plan_type" value="seller">
+                    <button type="submit" name="subscribe_plan" class="btn btn-primary">
+                      Change to {{ plan.name }}
+                    </button>
+                  </form>
+                {% endif %}
               {% else %}
+                {# Platform plan - check if it matches current plan #}
+                {% if current_plan and current_plan.slug == plan.slug %}
+                  <div style="margin-bottom: 10px;">
+                    <span style="padding: 8px 14px; border-radius: 6px; background: #e9f5e9; border: 1px solid #2d6a4f; color: #2d6a4f; font-weight: bold; display: inline-block;">Current Plan</span>
+                  </div>
                   <a href="{% url 'members:manage_subscription' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
                     Manage Subscription
                   </a>
+                {% else %}
+                  <form method="post" action="{% url 'members:my_membership' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+                    <input type="hidden" name="plan_type" value="admin">
+                    <button type="submit" name="subscribe_plan" class="btn btn-primary">
+                      Change to {{ plan.name }}
+                    </button>
+                  </form>
+                {% endif %}
               {% endif %}
           {% else %}
-              <form method="post">
+              {% if plan.seller %}
+                <form method="post" action="{% url 'members:my_membership' %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="plan_slug" value="{{ plan.get_full_slug }}">
+                  <input type="hidden" name="plan_type" value="seller">
+                  <button type="submit" name="subscribe_plan" class="btn btn-primary">
+                    Subscribe
+                  </button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'members:my_membership' %}">
                   {% csrf_token %}
                   <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+                  <input type="hidden" name="plan_type" value="admin">
                   <button type="submit" name="subscribe_plan" class="btn btn-primary">
-                      Subscribe
+                    Subscribe
                   </button>
-              </form>
+                </form>
+              {% endif %}
           {% endif %}
         </div>
       </div>

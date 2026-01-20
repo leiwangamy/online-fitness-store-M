@@ -137,9 +137,16 @@
     <div class="section">
         <h2>Current Subscription</h2>
         <div class="subscription-info">
-            {% if profile.is_active_member and current_plan %}
-                <p><strong>Plan:</strong> {{ current_plan.name }}</p>
-                <p><strong>Price:</strong> {{ current_plan.price_display }}</p>
+            {% if profile.is_active_member %}
+                {% if current_seller_plan %}
+                    <p><strong>Plan:</strong> {{ current_seller_plan.name }} ({{ current_seller_plan.seller.display_name|default:current_seller_plan.seller.user.username }})</p>
+                    <p><strong>Price:</strong> {{ current_seller_plan.price_display }}</p>
+                {% elif current_plan %}
+                    <p><strong>Plan:</strong> {{ current_plan.name }}</p>
+                    <p><strong>Price:</strong> {{ current_plan.price_display }}</p>
+                {% else %}
+                    <p><strong>Plan:</strong> {{ profile.membership_level }}</p>
+                {% endif %}
                 <p><strong>Status:</strong> 
                     {% if profile.auto_renew %}
                         <span class="status-active">Active</span>
@@ -171,10 +178,23 @@
                         </option>
                     {% endfor %}
                 </select>
+                <input type="hidden" name="plan_type" id="plan_type_input" value="admin">
                 <button type="submit" name="update_plan" class="btn btn-primary">
                     Update Plan
                 </button>
             </form>
+            <script>
+                // Set plan_type based on selected plan
+                document.querySelector('select[name="plan_slug"]').addEventListener('change', function() {
+                    const selectedValue = this.value;
+                    const planTypeInput = document.getElementById('plan_type_input');
+                    if (selectedValue && selectedValue.startsWith('seller_')) {
+                        planTypeInput.value = 'seller';
+                    } else {
+                        planTypeInput.value = 'admin';
+                    }
+                });
+            </script>
         </div>
     </div>
 

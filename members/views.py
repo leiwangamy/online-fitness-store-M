@@ -196,6 +196,42 @@ def seller_membership_plans(request):
 def my_membership(request):
     membership, _ = MemberProfile.objects.get_or_create(user=request.user)
 
+    # Handle plan subscription from GET parameter (redirected from membership plans page)
+    if request.method == "GET" and "plan" in request.GET:
+        plan_slug = request.GET.get("plan", "")
+        if plan_slug:
+            try:
+                # Check if it's a seller plan (starts with "seller_")
+                if plan_slug.startswith("seller_"):
+                    from sellers.models import SellerMembershipPlan
+                    # Parse the full slug: seller_{seller_id}_{slug}
+                    parts = plan_slug.split('_', 2)
+                    if len(parts) == 3 and parts[0] == 'seller':
+                        seller_id = parts[1]
+                        slug = parts[2]
+                        plan = get_object_or_404(SellerMembershipPlan, seller_id=seller_id, slug=slug, is_active=True)
+                        # Use full slug for seller plans, specify plan_type as 'seller'
+                        membership.start_monthly_membership(level=plan.get_full_slug(), plan_type="seller")
+                        price_text = plan.price_display
+                        messages.success(request, f"Successfully subscribed to {plan.name} plan from {plan.seller.display_name or plan.seller.user.username} ({price_text})!")
+                    else:
+                        messages.error(request, f"Invalid seller plan format: {plan_slug}")
+                else:
+                    # Admin/platform membership plan
+                    plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
+                    membership.start_monthly_membership(level=plan.slug, plan_type="platform")
+                    price_text = plan.price_display
+                    messages.success(request, f"Successfully subscribed to {plan.name} plan ({price_text})!")
+                # Redirect to remove the plan parameter from URL
+                return redirect("members:my_membership")
+            except Exception as e:
+                import traceback
+                error_details = traceback.format_exc()
+                messages.error(request, f"Error subscribing to plan: {str(e)}")
+                # Log the error for debugging
+                print(f"Subscription error: {error_details}")
+                return redirect("members:my_membership")
+
     if request.method == "POST":
         if "resume_membership" in request.POST and membership.is_active_member:
             membership.auto_renew = True
@@ -227,16 +263,16 @@ def my_membership(request):
                         seller_id = parts[1]
                         slug = parts[2]
                         plan = get_object_or_404(SellerMembershipPlan, seller_id=seller_id, slug=slug, is_active=True)
-                        # Use full slug for seller plans
-                        membership.start_monthly_membership(level=plan.get_full_slug())
+                        # Use full slug for seller plans, specify plan_type as 'seller'
+                        membership.start_monthly_membership(level=plan.get_full_slug(), plan_type="seller")
                         price_text = plan.price_display
                         messages.success(request, f"Successfully subscribed to {plan.name} plan from {plan.seller.display_name or plan.seller.user.username} ({price_text})!")
                     else:
                         messages.error(request, "Invalid seller plan.")
                 else:
-                    # Admin membership plan
+                    # Admin/platform membership plan
                     plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
-                    membership.start_monthly_membership(level=plan.slug)
+                    membership.start_monthly_membership(level=plan.slug, plan_type="platform")
                     price_text = plan.price_display
                     messages.success(request, f"Successfully subscribed to {plan.name} plan ({price_text})!")
             except Exception as e:
@@ -251,6 +287,9 @@ def my_membership(request):
         seller_plans = SellerMembershipPlan.objects.filter(is_active=True).select_related('seller').order_by('seller__display_name', 'display_order', 'name')
     except Exception:
         seller_plans = []
+    
+    # Combine all plans for template (platform plans first, then seller plans)
+    all_plans = list(admin_plans) + list(seller_plans)
     
     # Get current plan info
     current_plan = None
@@ -274,6 +313,7 @@ def my_membership(request):
     
     return render(request, "members/my_membership.html", {
         "profile": membership,
+        "plans": all_plans,  # Combined list for template
         "admin_plans": admin_plans,
         "seller_plans": seller_plans,
         "current_plan": current_plan,
@@ -285,7 +325,7 @@ def my_subscriptions(request):
     """My Subscriptions page - shows all memberships (platform and seller) in a unified view"""
     membership, _ = MemberProfile.objects.get_or_create(user=request.user)
     
-    # Get platform membership info
+    # Get platform membership info (single membership system - check if current membership is platform)
     platform_membership = None
     if membership.is_active_member and membership.membership_level and membership.membership_level != "none":
         if not membership.membership_level.startswith("seller_"):
@@ -301,7 +341,7 @@ def my_subscriptions(request):
             except MembershipPlan.DoesNotExist:
                 pass
     
-    # Get seller membership info
+    # Get seller membership info (single membership system - check if current membership is seller)
     seller_membership = None
     if membership.is_active_member and membership.membership_level and membership.membership_level != "none":
         if membership.membership_level.startswith("seller_"):
@@ -340,14 +380,29 @@ def manage_subscription(request):
         # Handle plan update
         if "update_plan" in request.POST:
             plan_slug = request.POST.get("plan_slug")
+            plan_type = request.POST.get("plan_type", "admin")
             if plan_slug and membership.is_active_member:
                 try:
-                    plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
-                    membership.membership_level = plan.slug
-                    membership.save(update_fields=["membership_level"])
-                    messages.success(request, f"Plan updated to {plan.name}. Your membership will change immediately.")
+                    if plan_type == "seller" and plan_slug.startswith("seller_"):
+                        from sellers.models import SellerMembershipPlan
+                        # Parse the full slug: seller_{seller_id}_{slug}
+                        parts = plan_slug.split('_', 2)
+                        if len(parts) == 3 and parts[0] == 'seller':
+                            seller_id = parts[1]
+                            slug = parts[2]
+                            plan = get_object_or_404(SellerMembershipPlan, seller_id=seller_id, slug=slug, is_active=True)
+                            membership.membership_level = plan.get_full_slug()
+                            membership.save(update_fields=["membership_level"])
+                            messages.success(request, f"Plan updated to {plan.name} from {plan.seller.display_name or plan.seller.user.username}. Your membership will change immediately.")
+                    else:
+                        plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
+                        membership.membership_level = plan.slug
+                        membership.save(update_fields=["membership_level"])
+                        messages.success(request, f"Plan updated to {plan.name}. Your membership will change immediately.")
                 except Exception as e:
-                    messages.error(request, "Error updating plan. Please try again.")
+                    import traceback
+                    print(f"Plan update error: {traceback.format_exc()}")
+                    messages.error(request, f"Error updating plan: {str(e)}")
             return redirect("members:manage_subscription")
 
         # Handle cancel subscription
@@ -397,11 +452,29 @@ def manage_subscription(request):
         seller_plans = SellerMembershipPlan.objects.filter(is_active=True).select_related('seller').order_by('seller__display_name', 'display_order', 'name')
     except Exception:
         seller_plans = []
+    
+    # Combine all plans for dropdown (platform plans first, then seller plans)
+    all_plans = []
+    for plan in admin_plans:
+        all_plans.append({
+            'slug': plan.slug,
+            'name': plan.name,
+            'price_display': plan.price_display,
+            'is_seller': False
+        })
+    for plan in seller_plans:
+        all_plans.append({
+            'slug': plan.get_full_slug(),
+            'name': f"{plan.name} ({plan.seller.display_name or plan.seller.user.username})",
+            'price_display': plan.price_display,
+            'is_seller': True
+        })
 
     return render(request, "members/manage_subscription.html", {
         "profile": membership,
         "current_plan": current_plan,
         "current_seller_plan": current_seller_plan,
+        "plans": all_plans,  # Combined list for dropdown
         "admin_plans": admin_plans,
         "seller_plans": seller_plans
     })

@@ -8,6 +8,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 class MemberProfile(models.Model):
+    # Legacy choices kept for reference, but field no longer uses choices constraint
     MEMBERSHIP_LEVEL_CHOICES = [
         ("none", "No membership"),
         ("basic", "Facility only – unlimited gym access"),
@@ -20,36 +21,58 @@ class MemberProfile(models.Model):
         related_name="membership",  # ✅ IMPORTANT: avoid conflict with profiles.Profile related_name="profile"
     )
 
-    membership_level = models.CharField(max_length=20, choices=MEMBERSHIP_LEVEL_CHOICES, default="none")
+    # Single membership field - user can have EITHER platform OR seller membership (not both)
+    membership_level = models.CharField(max_length=100, default="none", help_text="Membership plan identifier (slug). Can be a platform plan slug or seller plan full slug (seller_X_slug)")
     is_member = models.BooleanField(default=False)
     membership_started = models.DateTimeField(blank=True, null=True)
     membership_expires = models.DateTimeField(blank=True, null=True)
-
     auto_renew = models.BooleanField(default=False)
     next_billing_date = models.DateField(blank=True, null=True)
     last_billed_date = models.DateField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.user} – {self.get_membership_level_display()}"
+        level_display = self.get_membership_level_display()
+        if level_display == self.membership_level:
+            # If display is same as value, it means it's not in choices (likely a seller plan)
+            # Try to get a better display name
+            if self.membership_level.startswith("seller_"):
+                try:
+                    from sellers.models import SellerMembershipPlan
+                    parts = self.membership_level.split('_', 2)
+                    if len(parts) == 3:
+                        seller_id = parts[1]
+                        slug = parts[2]
+                        plan = SellerMembershipPlan.objects.get(seller_id=seller_id, slug=slug)
+                        level_display = f"{plan.seller.display_name or plan.seller.user.username} - {plan.name}"
+                except Exception:
+                    pass
+        return f"{self.user} – {level_display}"
 
     @property
     def is_active_member(self) -> bool:
+        """Check if user has an active membership"""
         if not self.is_member:
             return False
         return not (self.membership_expires and self.membership_expires < timezone.now())
 
-    def start_monthly_membership(self, level: str):
+    def start_monthly_membership(self, level: str, plan_type: str = "auto"):
+        """
+        Start a monthly membership. Replaces any existing membership.
+        If plan_type is 'auto', it will be determined from the level.
+        plan_type can be 'platform', 'seller', or 'auto'
+        """
         now = timezone.now()
         expiry = now + timedelta(days=30)
 
+        # Set the membership (replaces any existing one)
         self.membership_level = level
         self.is_member = True
         self.membership_started = now
         self.membership_expires = expiry
-
         self.auto_renew = True
         self.last_billed_date = now.date()
         self.next_billing_date = (expiry + timedelta(days=1)).date()
+        
         self.save()
 
     def simulate_monthly_billing_cycle(self):
