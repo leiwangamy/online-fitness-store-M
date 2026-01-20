@@ -264,3 +264,43 @@ class FeaturedProductsContent(models.Model):
         """Get or create the single instance of FeaturedProductsContent"""
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
+
+
+class AdminSettings(models.Model):
+    """
+    Admin settings for controlling various admin panel features.
+    Singleton pattern - only one instance should exist.
+    """
+    show_platform_membership = models.BooleanField(
+        default=True,
+        help_text="Show/hide platform membership functions"
+    )
+    show_seller_membership = models.BooleanField(
+        default=True,
+        help_text="Show/hide seller membership functions"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Keep old field for backward compatibility during migration
+    show_membership_functions = models.BooleanField(
+        default=True,
+        help_text="[Deprecated] Use show_platform_membership instead"
+    )
+    
+    class Meta:
+        verbose_name = "Admin Settings"
+        verbose_name_plural = "Admin Settings"
+    
+    def __str__(self):
+        return f"Admin Settings (Updated: {self.updated_at.strftime('%Y-%m-%d %H:%M')})"
+    
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists (singleton pattern)
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_instance(cls):
+        """Get or create the single instance of AdminSettings"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj

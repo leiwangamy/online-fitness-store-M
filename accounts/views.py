@@ -38,7 +38,12 @@ def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
         messages.success(request, "You have been logged out.")
-    return redirect("home:home")
+    # Use HttpResponseRedirect with status 303 to force GET redirect (prevents POST data from being sent)
+    from django.http import HttpResponseRedirect
+    from django.urls import reverse
+    response = HttpResponseRedirect(reverse("home:home"))
+    response.status_code = 303  # 303 See Other forces GET method on redirect
+    return response
 
 
 @login_required

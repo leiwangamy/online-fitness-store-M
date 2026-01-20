@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Seller Portal - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .seller-portal-card {
+    max-width: 500px;
+    padding: 40px;
+    border: 1px solid #ccc;
+    background: #fff;
+    margin: 50px auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .seller-portal-card h1 {
+    color: #2d6a4f;
+    margin-bottom: 10px;
+    font-size: 2rem;
+    text-align: center;
+  }
+
+  .seller-portal-card > p {
+    text-align: center;
+    color: #666;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+  }
+
+  .login-form {
+    margin-bottom: 30px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    font-weight: bold;
+    color: #333;
+    display: block;
+    margin-bottom: 8px;
+    font-size: 1rem;
+  }
+
+  .form-group input[type="email"],
+  .form-group input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin: 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+  }
+
+  .form-group input[type="email"]:focus,
+  .form-group input[type="password"]:focus {
+    outline: none;
+    border-color: #2d6a4f;
+    box-shadow: 0 0 0 2px rgba(45, 106, 79, 0.1);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+
+  .btn-primary {
+    background: #2d6a4f;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: #1b4332;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+    color: white;
+    margin-top: 10px;
+  }
+
+  .btn-secondary:hover {
+    background: #5a6268;
+  }
+
+  .divider {
+    text-align: center;
+    margin: 30px 0;
+    position: relative;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 45%;
+    height: 1px;
+    background: #ddd;
+  }
+
+  .divider::before {
+    left: 0;
+  }
+
+  .divider::after {
+    right: 0;
+  }
+
+  .divider span {
+    background: #fff;
+    padding: 0 15px;
+    color: #666;
+    position: relative;
+  }
+
+  .become-seller-section {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin-top: 20px;
+  }
+
+  .become-seller-section h3 {
+    color: #2d6a4f;
+    margin-bottom: 10px;
+  }
+
+  .become-seller-section p {
+    color: #666;
+    margin-bottom: 15px;
+  }
+
+  .become-seller-link {
+    display: inline-block;
+    padding: 12px 30px;
+    background: #2d6a4f;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    transition: background-color 0.3s;
+  }
+
+  .become-seller-link:hover {
+    background: #1b4332;
+  }
+
+  .signup-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+  }
+
+  .signup-link a {
+    color: #2d6a4f;
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  .signup-link a:hover {
+    text-decoration: underline;
+  }
+
+  .error-message {
+    color: #dc3545;
+    background: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="seller-portal-card">
+  <h1>Seller Portal</h1>
+  <p>Access your seller dashboard and manage your products</p>
+
+  {% if not is_authenticated %}
+    <!-- Login Form -->
+    <form method="post" action="{% url 'account_login' %}" class="login-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'sellers:portal' %}">
+      
+      {% if request.GET.next %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+      {% endif %}
+      
+      {% if form.errors %}
+        <div class="error-message">
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              {{ error }}
+            {% endfor %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="login">Email Address</label>
+        <input type="email" id="login" name="login" required autofocus placeholder="your@email.com">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required placeholder="Enter your password">
+      </div>
+
+      <button type="submit" class="btn btn-primary">Sign In</button>
+    </form>
+
+    <div class="signup-link">
+      <p>Don't have an account? <a href="{% url 'account_signup' %}?next={% url 'sellers:portal' %}">Sign up here</a></p>
+    </div>
+
+    <div class="divider">
+      <span>OR</span>
+    </div>
+
+    <!-- Become a Seller Section -->
+    <div class="become-seller-section">
+      <h3>New to Selling?</h3>
+      <p>Apply to become a seller and start selling your products on our platform!</p>
+      <a href="{% url 'sellers:apply' %}" class="become-seller-link">Become a Seller</a>
+    </div>
+
+  {% else %}
+    <!-- User is logged in but doesn't have a seller account -->
+    <div class="become-seller-section" style="margin-top: 0;">
+      <h3>Welcome, {{ user.email }}!</h3>
+      <p>You don't have a seller account yet. Apply now to start selling your products!</p>
+      <a href="{% url 'sellers:apply' %}" class="become-seller-link">Become a Seller</a>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="{% url 'home:home' %}" class="btn btn-secondary">Back to Home</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

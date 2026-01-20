@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete Membership Plan - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Delete Membership Plan</h1>
+    
+    <div style="max-width: 600px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0;">
+        {% if plan.has_active_members %}
+            <div style="padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 20px;">
+                <strong style="color: #856404;">⚠ Cannot Delete Plan</strong>
+                <p style="color: #856404; margin: 10px 0 0 0;">
+                    This plan has <strong>{{ plan.get_active_member_count }} active member subscription(s)</strong>. 
+                    Please inactivate the plan instead of deleting it.
+                </p>
+            </div>
+        {% else %}
+            <div style="padding: 15px; background: #f8d7da; border: 1px solid #dc3545; border-radius: 4px; margin-bottom: 20px;">
+                <strong style="color: #721c24;">⚠ Warning: This action cannot be undone!</strong>
+            </div>
+            
+            <p>Are you sure you want to delete the membership plan <strong>"{{ plan.name }}"</strong>?</p>
+            
+            <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                <p><strong>Plan Details:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Name: {{ plan.name }}</li>
+                    <li>Price: {{ plan.price_display }}</li>
+                    <li>Status: {% if plan.is_active %}Active{% else %}Inactive{% endif %}</li>
+                </ul>
+            </div>
+        {% endif %}
+        
+        <div style="margin-top: 30px;">
+            {% if not plan.has_active_members %}
+                <form method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" style="padding: 12px 24px; font-size: 16px;">Yes, Delete Plan</button>
+                </form>
+            {% endif %}
+            <a href="{% url 'sellers:membership_plans_list' %}" class="btn btn-secondary" style="padding: 12px 24px; font-size: 16px; margin-left: 10px;">Cancel</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+</style>
+{% endblock %}
+

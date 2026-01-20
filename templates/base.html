@@ -434,7 +434,19 @@
       <div class="nav-links" id="navLinks">
         <a href="{% url 'home:home' %}">Home</a>
         <a href="{% url 'products:list' %}">Products</a>
-        <a href="{% url 'members:membership_plans' %}">Membership</a>
+        {% if admin_settings.show_platform_membership %}
+          {% if has_platform_membership %}
+            <a href="{% url 'members:membership_plans' %}">Membership</a>
+          {% endif %}
+        {% endif %}
+        {% if admin_settings.show_seller_membership and has_seller_membership %}
+          {% regroup seller_plans by seller as plans_by_seller %}
+          {% if plans_by_seller|length == 1 %}
+            <a href="{% url 'members:seller_membership_plans' %}">{{ plans_by_seller.0.grouper.display_name|default:plans_by_seller.0.grouper.user.username }} Membership</a>
+          {% else %}
+            <a href="{% url 'members:seller_membership_plans' %}">Seller Memberships</a>
+          {% endif %}
+        {% endif %}
         <a href="{% url 'core:blog' %}">Blog</a>
         <a href="{% url 'core:contact' %}">Contact</a>
         <a href="{% url 'cart:cart_detail' %}" style="position: relative;">
@@ -460,11 +472,26 @@
                 {% endif %}
               </div>
               <a href="{% url 'profiles:account_profile' %}">Profile</a>
-              <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
-                Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_membership_status|default:"None" }}</strong>
-              </div>
+              {% if admin_settings.show_membership_functions %}
+                {% if has_platform_membership %}
+                <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
+                  Platform Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_membership_status|default:"None" }}</strong>
+                </div>
+                {% endif %}
+                {% if has_seller_membership %}
+                <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
+                  Seller Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_seller_membership_status|default:"None" }}</strong>
+                </div>
+                {% endif %}
+                {% if has_platform_membership or has_seller_membership %}
+                <a href="{% url 'members:my_subscriptions' %}">My Subscriptions</a>
+                <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
+                {% else %}
+                <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
+                {% endif %}
+              {% else %}
               <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
-              <a href="{% url 'members:manage_subscription' %}">Manage Subscription</a>
+              {% endif %}
               <div class="dropdown-divider"></div>
               <form action="{% url 'accounts:account_logout' %}" method="post" style="margin: 0; padding: 0;">
                 {% csrf_token %}
@@ -491,11 +518,26 @@
                 {% endif %}
               </div>
               <a href="{% url 'profiles:account_profile' %}">Profile</a>
-              <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
-                Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_membership_status|default:"None" }}</strong>
-              </div>
+              {% if admin_settings.show_membership_functions %}
+                {% if has_platform_membership %}
+                <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
+                  Platform Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_membership_status|default:"None" }}</strong>
+                </div>
+                {% endif %}
+                {% if has_seller_membership %}
+                <div style="padding: 10px 20px; color: #666; font-size: 16px; border-bottom: 1px solid #eee;">
+                  Seller Membership: <strong style="color: #0066cc; font-size: 16px;">{{ user_seller_membership_status|default:"None" }}</strong>
+                </div>
+                {% endif %}
+                {% if has_platform_membership or has_seller_membership %}
+                <a href="{% url 'members:my_subscriptions' %}">My Subscriptions</a>
+                <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
+                {% else %}
+                <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
+                {% endif %}
+              {% else %}
               <a href="{% url 'profiles:billing_payments' %}">Billing / Payments</a>
-              <a href="{% url 'members:manage_subscription' %}">Manage Subscription</a>
+              {% endif %}
               <div class="dropdown-divider"></div>
               <form action="{% url 'accounts:account_logout' %}" method="post" style="margin: 0; padding: 0;">
                 {% csrf_token %}
@@ -538,7 +580,7 @@
         <div style="margin-bottom: 10px;">
           <h3 style="color: #2d6a4f; margin: 0 0 5px 0; font-size: 16px;">For Sellers</h3>
           <ul style="list-style: none; padding: 0; margin: 0;">
-            <li><a href="{% url 'sellers:apply' %}" style="color: #0066cc; text-decoration: underline; font-weight: bold; font-size: 15px;">Seller Portal</a></li>
+            <li><a href="{% url 'sellers:portal' %}" style="color: #0066cc; text-decoration: underline; font-weight: bold; font-size: 15px;">Seller Portal</a></li>
           </ul>
         </div>
         <div style="text-align: center; color: #666; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">

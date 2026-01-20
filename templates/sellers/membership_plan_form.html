@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ action }} Membership Plan - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ action }} Membership Plan</h1>
+    
+    <div style="margin: 20px 0;">
+        <a href="{% url 'sellers:membership_plans_list' %}" class="btn btn-secondary">Back to Plans</a>
+    </div>
+    
+    <form method="post" style="max-width: 800px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 20px;">
+            <label for="name" style="display: block; margin-bottom: 5px; font-weight: bold;">Plan Name *</label>
+            <input type="text" id="name" name="name" value="{% if plan %}{{ plan.name }}{% endif %}" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="slug" style="display: block; margin-bottom: 5px; font-weight: bold;">Slug (URL-friendly identifier)</label>
+            <input type="text" id="slug" name="slug" value="{% if plan %}{{ plan.slug }}{% endif %}" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+            <small style="color: #666;">Leave empty to auto-generate from name. Use lowercase letters, numbers, and hyphens only.</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="price" style="display: block; margin-bottom: 5px; font-weight: bold;">Monthly Price *</label>
+            <input type="number" id="price" name="price" value="{% if plan %}{{ plan.price }}{% else %}0.00{% endif %}" step="0.01" min="0" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="description" style="display: block; margin-bottom: 5px; font-weight: bold;">Description *</label>
+            <textarea id="description" name="description" rows="5" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; font-family: inherit;">{% if plan %}{{ plan.description }}{% endif %}</textarea>
+            <small style="color: #666;">HTML supported: &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, etc.</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="details" style="display: block; margin-bottom: 5px; font-weight: bold;">Additional Details (Optional)</label>
+            <textarea id="details" name="details" rows="5" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; font-family: inherit;">{% if plan %}{{ plan.details }}{% endif %}</textarea>
+            <small style="color: #666;">HTML supported: &lt;ul&gt;&lt;li&gt; for lists, &lt;p&gt; for paragraphs.</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="display_order" style="display: block; margin-bottom: 5px; font-weight: bold;">Display Order</label>
+            <input type="number" id="display_order" name="display_order" value="{% if plan %}{{ plan.display_order }}{% else %}0{% endif %}" min="0" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;">
+            <small style="color: #666;">Lower numbers appear first. Default: 0</small>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" name="is_active" {% if plan and plan.is_active or not plan %}checked{% endif %} style="width: 20px; height: 20px;">
+                <span style="font-weight: bold;">Active (shown to customers)</span>
+            </label>
+            {% if plan and plan.has_active_members %}
+                <small style="color: #856404; display: block; margin-top: 5px;">
+                    ⚠ This plan has {{ plan.get_active_member_count }} active member(s). Deactivating may affect existing subscriptions.
+                </small>
+            {% endif %}
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 16px;">Save Plan</button>
+            <a href="{% url 'sellers:membership_plans_list' %}" class="btn btn-secondary" style="padding: 12px 24px; font-size: 16px; margin-left: 10px;">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #2d6a4f;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+</style>
+{% endblock %}
+

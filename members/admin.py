@@ -4,7 +4,20 @@ from django.db.models import Q
 from django.utils.html import format_html
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.template.response import TemplateResponse
+from django.contrib.admin.views.main import ChangeList
 from .models import MemberProfile, MembershipPlan
+
+
+def get_membership_visibility():
+    """Check if membership functions should be visible in admin"""
+    try:
+        from core.models import AdminSettings
+        admin_settings = AdminSettings.get_instance()
+        return admin_settings.show_membership_functions
+    except Exception:
+        # If AdminSettings doesn't exist yet, default to True
+        return True
 
 
 @admin.register(MemberProfile)
@@ -12,6 +25,7 @@ class MemberProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "membership_level",
+        "seller_display",
         "is_member",
         "is_active_member_display",
         "membership_started",
@@ -26,16 +40,77 @@ class MemberProfileAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Active now?")
     def is_active_member_display(self, obj):
         return obj.is_active_member
+    
+    @admin.display(description="Seller")
+    def seller_display(self, obj):
+        """Display the seller who set up this membership, or 'Platform' for admin plans"""
+        if not obj.membership_level or obj.membership_level == "none":
+            return "-"
+        
+        # Check if it's a seller membership (starts with "seller_")
+        if obj.membership_level.startswith("seller_"):
+            try:
+                from sellers.models import Seller
+                # Parse the full slug: seller_{seller_id}_{slug}
+                parts = obj.membership_level.split('_', 2)
+                if len(parts) == 3:
+                    seller_id = parts[1]
+                    seller = Seller.objects.get(id=seller_id)
+                    seller_name = seller.display_name or seller.user.username
+                    return format_html('<strong>{}</strong>', seller_name)
+            except Exception:
+                return "-"
+        
+        # Platform membership (admin-created)
+        return format_html('<span style="color: #666;">Platform</span>')
+    
+    # Note: has_module_permission removed - admin panel should always be visible
+    # even when membership is hidden, so admins can manage seller memberships
 
 
 @admin.register(MembershipPlan)
 class MembershipPlanAdmin(admin.ModelAdmin):
     """Admin interface for managing membership plans"""
-    list_display = ('name', 'slug', 'price_display', 'is_active', 'active_members_count', 'display_order', 'created_at')
+    list_display = ('name', 'slug', 'seller_display', 'price_display', 'is_active', 'active_members_count', 'display_order', 'created_at')
     list_filter = ('is_active',)
     search_fields = ('name', 'slug', 'description')
     list_editable = ('is_active', 'display_order')
     prepopulated_fields = {'slug': ('name',)}
+    
+    @admin.display(description="Seller", ordering='id')
+    def seller_display(self, obj):
+        """Display seller name - works for both platform and seller plans"""
+        # Check if this is a platform plan (MembershipPlan) or seller plan (SellerMembershipPlan)
+        if hasattr(obj, 'seller'):
+            # This is a SellerMembershipPlan
+            seller_name = obj.seller.display_name or obj.seller.user.username
+            return format_html('<strong style="color: #28a745;">{}</strong>', seller_name)
+        else:
+            # This is a platform MembershipPlan
+            return format_html('<strong style="color: #0066cc;">Platform</strong>')
+    
+    def changelist_view(self, request, extra_context=None):
+        """Override changelist to show both platform and seller plans in unified list"""
+        # Get seller plans
+        try:
+            from sellers.models import SellerMembershipPlan
+            seller_plans = SellerMembershipPlan.objects.all().select_related('seller').order_by('display_order', 'name')
+        except Exception:
+            seller_plans = []
+        
+        # Add seller plans to extra_context
+        if extra_context is None:
+            extra_context = {}
+        extra_context['seller_plans'] = seller_plans
+        
+        # Get the standard changelist response
+        response = super().changelist_view(request, extra_context=extra_context)
+        
+        # Ensure seller plans are in the context
+        if isinstance(response, TemplateResponse) and response.context_data:
+            response.context_data['seller_plans'] = seller_plans
+        
+        return response
     
     fieldsets = (
         ('Plan Information', {
@@ -171,3 +246,6 @@ class MembershipPlanAdmin(admin.ModelAdmin):
         queryset.delete()
         # Show our own success message to ensure consistency
         messages.success(request, f"Successfully deleted {count} membership plan(s).")
+    
+    # Note: has_module_permission removed - admin panel should always be visible
+    # even when membership is hidden, so admins can manage seller memberships

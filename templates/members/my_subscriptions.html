@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}
+  My Subscriptions | Fitness Club
+{% endblock %}
+
+{% block content %}
+
+<style>
+    .subscriptions-container {
+        max-width: 900px;
+        margin: 20px auto;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .subscriptions-container h1 {
+        text-align: center;
+        color: #1b4332;
+        margin-bottom: 30px;
+        font-size: 2em;
+    }
+
+    .membership-section {
+        margin-bottom: 40px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .membership-section h2 {
+        color: #1b4332;
+        margin-top: 0;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        border-bottom: 2px solid #1b4332;
+        padding-bottom: 10px;
+    }
+
+    .membership-item {
+        background: white;
+        padding: 20px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        border: 1px solid #d0d0d0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .membership-info {
+        flex: 1;
+        min-width: 250px;
+    }
+
+    .membership-info h3 {
+        margin: 0 0 10px 0;
+        color: #1b4332;
+        font-size: 1.2em;
+    }
+
+    .membership-details {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        color: #666;
+        font-size: 14px;
+    }
+
+    .membership-details strong {
+        color: #333;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .status-cancelled {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-inactive {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+
+    .manage-button {
+        padding: 10px 20px;
+        background: #1b4332;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: bold;
+        transition: background 0.3s;
+        white-space: nowrap;
+    }
+
+    .manage-button:hover {
+        background: #2d5a3d;
+        color: white;
+    }
+
+    .no-memberships {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 1.1em;
+    }
+
+    .no-memberships a {
+        color: #1b4332;
+        text-decoration: underline;
+    }
+</style>
+
+<div class="subscriptions-container">
+    <h1>My Subscriptions</h1>
+
+    <!-- Platform Membership Section -->
+    {% if platform_membership %}
+    <div class="membership-section">
+        <h2>Platform Membership</h2>
+        <div class="membership-item">
+            <div class="membership-info">
+                <h3>Platform Membership</h3>
+                <div class="membership-details">
+                    <div>
+                        <strong>Plan:</strong> {{ platform_membership.plan.name }}
+                    </div>
+                    <div>
+                        <strong>Status:</strong> 
+                        <span class="status-badge {% if platform_membership.status == 'Active' %}status-active{% else %}status-inactive{% endif %}">
+                            {{ platform_membership.status }}
+                        </span>
+                    </div>
+                    {% if platform_membership.next_billing %}
+                    <div>
+                        <strong>Next billing:</strong> {{ platform_membership.next_billing|date:"M d, Y" }}
+                    </div>
+                    {% elif platform_membership.expires %}
+                    <div>
+                        <strong>Expires:</strong> {{ platform_membership.expires|date:"M d, Y" }}
+                    </div>
+                    {% endif %}
+                    {% if not platform_membership.auto_renew and platform_membership.status == 'Active' %}
+                    <div style="color: #856404;">
+                        <strong>Auto-renewal:</strong> Cancelled
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'members:manage_subscription' %}" class="manage-button">Manage</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Seller Memberships Section -->
+    {% if seller_membership %}
+    <div class="membership-section">
+        <h2>Seller Memberships</h2>
+        <div class="membership-item">
+            <div class="membership-info">
+                <h3>{{ seller_membership.seller.display_name|default:seller_membership.seller.user.username }} – {{ seller_membership.plan.name }} 
+                    <span class="status-badge {% if seller_membership.status == 'Active' %}status-active{% elif seller_membership.status == 'Cancelled' %}status-cancelled{% else %}status-inactive{% endif %}" style="font-size: 0.7em; margin-left: 10px;">
+                        ({{ seller_membership.status }})
+                    </span>
+                </h3>
+                <div class="membership-details">
+                    {% if seller_membership.expires and seller_membership.status == 'Cancelled' %}
+                    <div>
+                        <strong>Ends:</strong> {{ seller_membership.expires|date:"M d, Y" }}
+                    </div>
+                    {% elif seller_membership.next_billing %}
+                    <div>
+                        <strong>Next billing:</strong> {{ seller_membership.next_billing|date:"M d, Y" }}
+                    </div>
+                    {% elif seller_membership.expires %}
+                    <div>
+                        <strong>Expires:</strong> {{ seller_membership.expires|date:"M d, Y" }}
+                    </div>
+                    {% endif %}
+                    {% if not seller_membership.auto_renew and seller_membership.status == 'Active' %}
+                    <div style="color: #856404;">
+                        <strong>Auto-renewal:</strong> Cancelled
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'members:manage_subscription' %}" class="manage-button">Manage</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- No Memberships -->
+    {% if not platform_membership and not seller_membership %}
+    <div class="no-memberships">
+        <p>You don't have any active subscriptions.</p>
+        <p style="margin-top: 20px;">
+            <a href="{% url 'members:membership_plans' %}">Browse membership plans</a> to get started.
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+

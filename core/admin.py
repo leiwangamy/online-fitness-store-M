@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import CompanyInfo, UserDeletion, BlogPost, BlogPostImage, MembershipPlanContent, FeaturedProductsContent
+from .models import CompanyInfo, UserDeletion, BlogPost, BlogPostImage, MembershipPlanContent, FeaturedProductsContent, AdminSettings
 
 
 @admin.register(CompanyInfo)
@@ -174,6 +174,33 @@ class FeaturedProductsContentAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Only allow one instance (singleton pattern)
         return not FeaturedProductsContent.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Don't allow deletion to maintain the singleton pattern
+        return False
+
+
+@admin.register(AdminSettings)
+class AdminSettingsAdmin(admin.ModelAdmin):
+    """Admin interface for managing admin panel settings"""
+    
+    list_display = ['show_membership_functions', 'updated_at']
+    
+    fieldsets = (
+        ('Admin Panel Settings', {
+            'fields': ('show_membership_functions',),
+            'description': 'Control visibility of membership-related models in the admin panel.'
+        }),
+        ('Metadata', {
+            'fields': ('updated_at',),
+            'classes': ('collapse',)
+        }),
+    )
+    readonly_fields = ['updated_at']
+    
+    def has_add_permission(self, request):
+        # Only allow one instance (singleton pattern)
+        return not AdminSettings.objects.exists()
     
     def has_delete_permission(self, request, obj=None):
         # Don't allow deletion to maintain the singleton pattern

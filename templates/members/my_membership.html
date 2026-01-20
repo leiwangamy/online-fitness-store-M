@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block title %}
+  {% if current_seller_plan %}{{ current_seller_plan.seller.display_name|default:current_seller_plan.seller.user.username }} Membership - {% elif current_plan %}Platform Membership - {% else %}Membership - {% endif %}{{ block.super }}
+{% endblock %}
+
 {% block content %}
 
 <style>

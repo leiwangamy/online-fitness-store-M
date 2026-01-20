@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 
+{% block title %}
+  Membership | Fitness Club
+{% endblock %}
+
 {% block content %}
 
 <style>
     .membership-card {
-        max-width: 800px;
+        max-width: 1000px;
         margin: 20px auto;
         background: #ffffff;
         border-radius: 10px;
@@ -15,7 +19,9 @@
     .membership-card h1 {
         text-align: center;
         color: #1b4332;
+        margin-bottom: 20px;
     }
+
 
     .plans {
         display: flex;
@@ -123,42 +129,79 @@
 </style>
 
 <div class="membership-card">
-    <h1>{% if content %}{{ content.page_title }}{% else %}Membership Plans{% endif %}</h1>
+    <h1>{% if content %}{{ content.page_title }}{% else %}Membership{% endif %}</h1>
     
     <div class="info-message">
-        <p><strong>{% if content %}{{ content.intro_text|linebreaks }}{% else %}Join our fitness club! Choose a membership plan that fits your needs. You'll need to sign in to subscribe.{% endif %}</strong></p>
+        {% if user.is_authenticated %}
+            {% if is_member and current_plan %}
+                <p><strong>You are currently subscribed to <strong style="color: #1b4332;">{{ current_plan.name }}</strong>. You can change your plan below or manage your subscription.</strong></p>
+            {% else %}
+                <p><strong>{% if content %}{{ content.intro_text|linebreaks }}{% else %}Join our fitness club! Choose a membership plan that fits your needs.{% endif %}</strong></p>
+            {% endif %}
+        {% else %}
+            <p><strong>{% if content %}{{ content.intro_text|linebreaks }}{% else %}Join our fitness club! Choose a membership plan that fits your needs. You'll need to sign in to subscribe.{% endif %}</strong></p>
+        {% endif %}
     </div>
-</div>
 
-<h2>Available Plans</h2>
-
-<div class="plans">
-  {% if plans %}
-    {% for plan in plans %}
-      <div class="plan">
-        <div class="plan-content">
-          <h3>{{ plan.name }}</h3>
-          <div class="plan-description">{{ plan.description|safe }}</div>
-          {% if plan.details %}
-            <div class="plan-details">{{ plan.details|safe }}</div>
-          {% endif %}
-        </div>
-        <div class="plan-button-container">
-          <p class="plan-price"><strong>{{ plan.price_display }}</strong></p>
-          <form method="post" action="{% url 'members:membership_plans' %}">
-              {% csrf_token %}
-              <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
-              <button type="submit" name="subscribe_plan" class="btn btn-primary">
+    <!-- Platform Membership Plans -->
+    {% if plans %}
+    <div class="plans">
+      {% for plan in plans %}
+        <div class="plan" {% if is_member and current_plan and current_plan.slug == plan.slug %}style="border: 2px solid #1b4332; background: #e8f5e9;"{% endif %}>
+          <div class="plan-content">
+            <h3>
+              {{ plan.name }}
+              {% if is_member and current_plan and current_plan.slug == plan.slug %}
+                <span style="font-size: 0.7em; color: #1b4332; font-weight: normal;">(Current Plan)</span>
+              {% endif %}
+            </h3>
+            <div class="plan-description">{{ plan.description|safe }}</div>
+            {% if plan.details %}
+              <div class="plan-details">{{ plan.details|safe }}</div>
+            {% endif %}
+          </div>
+          <div class="plan-button-container">
+            <p class="plan-price"><strong>{{ plan.price_display }}</strong></p>
+            {% if user.is_authenticated %}
+              {% if is_member and current_plan and current_plan.slug == plan.slug %}
+                <a href="{% url 'members:manage_subscription' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                  Manage Plan
+                </a>
+              {% elif is_member and current_plan %}
+                <form method="post" action="{% url 'members:membership_plans' %}" style="display: inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+                  <button type="submit" name="subscribe_plan" class="btn btn-primary">
+                    Change to {{ plan.name }}
+                  </button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'members:membership_plans' %}" style="display: inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+                  <button type="submit" name="subscribe_plan" class="btn btn-primary">
+                    Subscribe
+                  </button>
+                </form>
+              {% endif %}
+            {% else %}
+              <form method="post" action="{% url 'members:membership_plans' %}" style="display: inline;">
+                {% csrf_token %}
+                <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
+                <button type="submit" name="subscribe_plan" class="btn btn-primary">
                   Sign in to join
-              </button>
-          </form>
+                </button>
+              </form>
+            {% endif %}
+          </div>
         </div>
-      </div>
-    {% endfor %}
-  {% else %}
-    <p>No membership plans available at this time. Please check back later.</p>
-  {% endif %}
+      {% endfor %}
+    </div>
+    {% else %}
+      <p style="text-align: center; color: #666; padding: 40px;">No membership plans available at this time. Please check back later.</p>
+    {% endif %}
 </div>
+
 
 {% endblock %}
 

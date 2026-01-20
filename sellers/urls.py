@@ -7,6 +7,10 @@ from . import views
 app_name = "sellers"
 
 urlpatterns = [
+    # Seller portal landing page (first page)
+    path("", views.seller_portal, name="portal"),
+    path("portal/", views.seller_portal, name="portal_alt"),
+    
     # Seller application (public for logged-in users)
     path("apply/", views.apply, name="apply"),
     path("application-status/", views.application_status, name="application_status"),
@@ -30,5 +34,12 @@ urlpatterns = [
     
     # Data export (approved sellers only)
     path("data-export/", views.data_export, name="data_export"),
+    
+    # Membership plan management (approved sellers only)
+    path("membership-plans/", views.membership_plans_list, name="membership_plans_list"),
+    path("membership-plans/add/", views.membership_plan_add, name="membership_plan_add"),
+    path("membership-plans/<int:plan_id>/edit/", views.membership_plan_edit, name="membership_plan_edit"),
+    path("membership-plans/<int:plan_id>/delete/", views.membership_plan_delete, name="membership_plan_delete"),
+    path("membership-plans/<int:plan_id>/toggle-active/", views.membership_plan_toggle_active, name="membership_plan_toggle_active"),
 ]
 

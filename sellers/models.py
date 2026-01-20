@@ -1,6 +1,7 @@
 # sellers/models.py
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from decimal import Decimal
 
 
@@ -93,3 +94,87 @@ class Seller(models.Model):
     def is_rejected(self):
         """Check if application was rejected"""
         return self.status == self.STATUS_REJECTED
+
+
+class SellerMembershipPlan(models.Model):
+    """
+    Membership plans created by sellers.
+    Similar to admin MembershipPlan but owned by a seller.
+    """
+    seller = models.ForeignKey(
+        Seller,
+        on_delete=models.CASCADE,
+        related_name="membership_plans",
+        help_text="Seller who owns this membership plan"
+    )
+    name = models.CharField(
+        max_length=200,
+        help_text="Plan name (e.g., 'Basic', 'Premium', 'VIP')"
+    )
+    slug = models.SlugField(
+        help_text="URL-friendly identifier (e.g., 'basic', 'premium', 'vip')"
+    )
+    price = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Monthly price (use 0.00 for free plans)"
+    )
+    description = models.TextField(
+        help_text="Brief description. HTML supported: &lt;p&gt;, &lt;ul&gt;, &lt;li&gt;, &lt;strong&gt;, etc."
+    )
+    details = models.TextField(
+        blank=True,
+        default="",
+        help_text="Additional details (optional). HTML supported: &lt;ul&gt;&lt;li&gt; for lists, &lt;p&gt; for paragraphs."
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Only active plans are shown to customers"
+    )
+    display_order = models.PositiveIntegerField(
+        default=0,
+        help_text="Order in which plans appear (lower numbers first)"
+    )
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['display_order', 'name']
+        verbose_name = "Seller Membership Plan"
+        verbose_name_plural = "Seller Membership Plans"
+        unique_together = [['seller', 'slug']]  # Slug must be unique per seller
+    
+    def __str__(self):
+        return f"{self.seller.display_name or self.seller.user.username} - {self.name}"
+    
+    @property
+    def price_display(self):
+        """Return formatted price string"""
+        return f"${self.price} / month"
+    
+    def has_active_members(self):
+        """Check if this plan has any active member subscriptions"""
+        from members.models import MemberProfile
+        active_count = MemberProfile.objects.filter(
+            membership_level=self.get_full_slug(),
+            is_member=True
+        ).exclude(
+            membership_expires__lt=timezone.now()
+        ).count()
+        return active_count > 0
+    
+    def get_active_member_count(self):
+        """Get the number of active members subscribed to this plan"""
+        from members.models import MemberProfile
+        return MemberProfile.objects.filter(
+            membership_level=self.get_full_slug(),
+            is_member=True
+        ).exclude(
+            membership_expires__lt=timezone.now()
+        ).count()
+    
+    def get_full_slug(self):
+        """Get the full slug that includes seller identifier for uniqueness"""
+        return f"seller_{self.seller.id}_{self.slug}"

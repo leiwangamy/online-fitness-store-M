@@ -4,7 +4,9 @@
 {% block branding %}
   <div class="admin-nav-links">
     <a href="{% url 'home:home' %}">Home</a>
+    {% if admin_settings.show_platform_membership %}
     <a href="{% url 'members:my_membership' %}">Membership</a>
+    {% endif %}
     <a href="{% url 'cart:cart_detail' %}">Cart</a>
   </div>
   
@@ -22,6 +24,25 @@
         </a>
       {% endif %}
     </div>
+    {% if user.is_staff %}
+    <div class="admin-control-buttons" style="margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <form method="post" action="{% url 'admin_toggle_platform_membership' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="admin-control-btn" style="background: {% if admin_settings.show_platform_membership %}#28a745{% else %}#6c757d{% endif %}; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+          {% if admin_settings.show_platform_membership %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %} Platform Membership
+        </button>
+      </form>
+      <form method="post" action="{% url 'admin_toggle_seller_membership' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="admin-control-btn" style="background: {% if admin_settings.show_seller_membership %}#28a745{% else %}#6c757d{% endif %}; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+          {% if admin_settings.show_seller_membership %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %} Seller Membership
+        </button>
+      </form>
+      <a href="{% url 'admin_backup_database' %}" class="admin-control-btn" style="background: #007bff; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
+        💾 Backup Database
+      </a>
+    </div>
+    {% endif %}
   </div>
 {% endblock %}
 

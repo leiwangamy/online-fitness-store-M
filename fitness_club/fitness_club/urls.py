@@ -10,6 +10,7 @@ from django.views.static import serve
 from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from core.admin_views import toggle_platform_membership, toggle_seller_membership, backup_database
 
 # Ensure all admin.py files are discovered
 admin.autodiscover()
@@ -17,7 +18,7 @@ admin.autodiscover()
 
 def health_check(request):
     """Simple health check endpoint for nginx/gunicorn monitoring"""
-    return HttpResponse("ok", content_type="text/plain")
+    return HttpResponse(b"ok", content_type="text/plain")
 
 
 @require_http_methods(["GET", "POST"])
@@ -33,6 +34,9 @@ def admin_logout(request):
 urlpatterns = [
     path("health/", health_check, name="health"),
     path("admin/logout/", admin_logout, name="admin_logout"),
+    path("admin/toggle-platform-membership/", toggle_platform_membership, name="admin_toggle_platform_membership"),
+    path("admin/toggle-seller-membership/", toggle_seller_membership, name="admin_toggle_seller_membership"),
+    path("admin/backup-database/", backup_database, name="admin_backup_database"),
     path("admin/", admin.site.urls),
 
     # Include accounts app first so it can override allauth URLs (accessed with namespace "accounts")

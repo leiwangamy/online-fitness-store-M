@@ -15,11 +15,38 @@ import csv
 import json
 from django.http import HttpResponse, JsonResponse
 
-from .models import Seller
+from .models import Seller, SellerMembershipPlan
 from .forms import SellerApplicationForm, SellerProductForm
 from .decorators import seller_required
 from products.models import Product
 from orders.models import OrderItem, Order, Refund
+
+
+def seller_portal(request):
+    """
+    Seller portal landing page - first page users see.
+    - If not logged in: Show login form with "Become a Seller" link
+    - If logged in but no seller account: Show "Become a Seller" link
+    - If logged in with seller account: Redirect to appropriate page
+    """
+    # If user is authenticated, check seller status
+    if request.user.is_authenticated:
+        try:
+            seller = request.user.seller
+            # If seller is approved, redirect to dashboard
+            if seller.status == Seller.STATUS_APPROVED:
+                return redirect('sellers:dashboard')
+            # Otherwise, redirect to application status
+            return redirect('sellers:application_status')
+        except AttributeError:
+            # User is logged in but has no seller account
+            # Show the portal page with "Become a Seller" link
+            pass
+    
+    # Not logged in or logged in without seller account
+    return render(request, 'sellers/portal.html', {
+        'is_authenticated': request.user.is_authenticated,
+    })
 
 
 def apply(request):
@@ -708,36 +735,146 @@ def earnings_statement(request):
         order__created_at__lte=end_datetime
     ).select_related('order', 'product', 'order__user').order_by('order__created_at')
     
-    # Build transaction log
+    # Get refunds within date range
+    refunds = Refund.objects.filter(
+        seller=seller,
+        status=Refund.STATUS_SUCCEEDED,
+        created_at__gte=start_datetime,
+        created_at__lte=end_datetime
+    ).select_related('order', 'order_item').order_by('created_at')
+    
+    # Build transaction log in bank-style format
     transactions = []
     running_balance = Decimal('0.00')
     
+    # Track tax by type (Products vs Memberships)
+    tax_products_gst = Decimal('0.00')
+    tax_products_pst = Decimal('0.00')
+    tax_memberships_gst = Decimal('0.00')
+    tax_memberships_pst = Decimal('0.00')
+    
+    # Helper function to check if order item is membership
+    def is_membership_order(item):
+        """Check if order item is a membership"""
+        # Check if product name contains membership keywords or if it's from seller membership plan
+        product_name_lower = item.product.name.lower()
+        if 'membership' in product_name_lower or 'subscription' in product_name_lower:
+            return True
+        # Could also check product category or type if available
+        return False
+    
+    # Process order items
     for item in order_items:
-        # Order earnings transaction
+        is_membership = is_membership_order(item)
+        source = "Membership" if is_membership else "Product"
+        
+        # Calculate taxes
+        gst = item.line_total * Decimal('0.05') if item.product.charge_gst else Decimal('0.00')
+        pst = item.line_total * Decimal('0.07') if item.product.charge_pst else Decimal('0.00')
+        
+        # Track tax by type
+        if is_membership:
+            tax_memberships_gst += gst
+            tax_memberships_pst += pst
+        else:
+            tax_products_gst += gst
+            tax_products_pst += pst
+        
+        # 1. Product/Membership earnings transaction (positive)
         running_balance += item.seller_earnings
         transactions.append({
             'date': item.order.created_at,
-            'type': 'order',
+            'source': source,
             'description': f"Order #{item.order.id} – {item.product.name}",
-            'in': item.seller_earnings,
-            'out': Decimal('0.00'),
+            'amount': item.seller_earnings,
             'balance': running_balance,
             'order_id': item.order.id,
-            'gst': item.line_total * Decimal('0.05') if item.product.charge_gst else Decimal('0.00'),
-            'pst': item.line_total * Decimal('0.07') if item.product.charge_pst else Decimal('0.00'),
+            'type': 'order',
+            'is_membership': is_membership,
+            'gst': gst,
+            'pst': pst,
         })
+        
+        # 2. Commission fee transaction (negative, if commission exists)
+        if item.platform_fee > Decimal('0.00'):
+            running_balance -= item.platform_fee
+            transactions.append({
+                'date': item.order.created_at,
+                'source': 'Commission',
+                'description': f"Platform fee ({seller.commission_rate * 100:.0f}%)",
+                'amount': -item.platform_fee,  # Negative amount
+                'balance': running_balance,
+                'order_id': item.order.id,
+                'type': 'commission',
+                'is_membership': is_membership,
+                'gst': Decimal('0.00'),
+                'pst': Decimal('0.00'),
+            })
+    
+    # Process refunds
+    for refund in refunds:
+        # Determine if refund is for membership
+        is_membership = False
+        if refund.order_item:
+            is_membership = is_membership_order(refund.order_item)
+        
+        source = "Membership" if is_membership else "Product"
+        refund_description = f"Order #{refund.order.id} refund"
+        if refund.order_item:
+            refund_description = f"Order #{refund.order.id} – {refund.order_item.product.name} refund"
+        if refund.reason:
+            refund_description = f"{refund_description} ({refund.reason})"
+        
+        # 1. Refund transaction (negative)
+        running_balance -= refund.amount
+        transactions.append({
+            'date': refund.created_at,
+            'source': 'Refund',
+            'description': refund_description,
+            'amount': -refund.amount,  # Negative amount
+            'balance': running_balance,
+            'order_id': refund.order.id,
+            'type': 'refund',
+            'is_membership': is_membership,
+            'gst': Decimal('0.00'),
+            'pst': Decimal('0.00'),
+        })
+        
+        # 2. Commission reversal (positive, if original order had commission)
+        if refund.order_item and refund.order_item.platform_fee > Decimal('0.00'):
+            # Calculate proportional commission reversal
+            # If full refund, reverse full commission; if partial, calculate proportion
+            original_amount = refund.order_item.line_total
+            if original_amount > Decimal('0.00'):
+                commission_reversal = (refund.amount / original_amount) * refund.order_item.platform_fee
+                running_balance += commission_reversal
+                transactions.append({
+                    'date': refund.created_at,
+                    'source': 'Commission',
+                    'description': 'Commission reversal',
+                    'amount': commission_reversal,
+                    'balance': running_balance,
+                    'order_id': refund.order.id,
+                    'type': 'commission_reversal',
+                    'is_membership': is_membership,
+                    'gst': Decimal('0.00'),
+                    'pst': Decimal('0.00'),
+                })
     
     # Sort by date (oldest first for statement)
     transactions.sort(key=lambda x: x['date'])
     
     # Calculate period totals
-    total_in = sum(t['in'] for t in transactions)
-    total_out = sum(t['out'] for t in transactions)
-    net_change = total_in - total_out
+    # TOTAL REVENUE: All positive amounts (orders + commission reversals)
+    total_revenue = sum(t['amount'] for t in transactions if t['amount'] > 0)
+    # TOTAL COMMISSION: All negative commission amounts (absolute value)
+    total_commission = abs(sum(t['amount'] for t in transactions if t['amount'] < 0 and t['type'] == 'commission'))
+    # NET CHANGE: Sum of all transaction amounts
+    net_change = sum(t['amount'] for t in transactions)
     
     # Calculate tax totals
-    total_gst = sum(t['gst'] for t in transactions)
-    total_pst = sum(t['pst'] for t in transactions)
+    total_gst = tax_products_gst + tax_memberships_gst
+    total_pst = tax_products_pst + tax_memberships_pst
     total_tax = total_gst + total_pst
     
     # Handle CSV export
@@ -748,27 +885,36 @@ def earnings_statement(request):
         writer = csv.writer(response)
         writer.writerow(['Earnings Statement', f'{start_date} to {end_date}'])
         writer.writerow([])
-        writer.writerow(['Date', 'Description', 'In', 'Out', 'Balance'])
+        writer.writerow(['Date', 'Source', 'Description', 'Amount', 'Balance'])
         
         for t in transactions:
+            amount_str = f"+{t['amount']:.2f}" if t['amount'] >= 0 else f"{t['amount']:.2f}"
             writer.writerow([
                 t['date'].strftime('%Y-%m-%d'),
+                t['source'],
                 t['description'],
-                f"${t['in']:.2f}" if t['in'] > 0 else '',
-                f"${t['out']:.2f}" if t['out'] > 0 else '',
+                amount_str,
                 f"${t['balance']:.2f}"
             ])
         
         writer.writerow([])
-        writer.writerow(['Period Summary'])
-        writer.writerow(['Total In', f"${total_in:.2f}"])
-        writer.writerow(['Total Out', f"${total_out:.2f}"])
-        writer.writerow(['Net Change', f"${net_change:.2f}"])
+        writer.writerow(['Total Gross Revenue', '', '', f"+${total_revenue:.2f}", ''])
+        writer.writerow(['Platform Commission', '', '', f"-${total_commission:.2f}", ''])
+        writer.writerow(['', '', '', '---', ''])
+        writer.writerow(['Net Change', '', '', f"${net_change:.2f}", ''])
+        writer.writerow(['Ending Balance', '', '', '', f"${running_balance:.2f}"])
         writer.writerow([])
-        writer.writerow(['Tax Summary'])
-        writer.writerow(['GST Collected', f"${total_gst:.2f}"])
-        writer.writerow(['PST Collected', f"${total_pst:.2f}"])
-        writer.writerow(['Total Tax Collected', f"${total_tax:.2f}"])
+        writer.writerow(['Tax Summary (Reference Only)'])
+        writer.writerow(['Products'])
+        writer.writerow(['  GST', f"${tax_products_gst:.2f}"])
+        writer.writerow(['  PST', f"${tax_products_pst:.2f}"])
+        writer.writerow(['Memberships'])
+        writer.writerow(['  GST', f"${tax_memberships_gst:.2f}"])
+        writer.writerow(['  PST', f"${tax_memberships_pst:.2f}"])
+        writer.writerow(['Total Tax Collected'])
+        writer.writerow(['  GST', f"${total_gst:.2f}"])
+        writer.writerow(['  PST', f"${total_pst:.2f}"])
+        writer.writerow(['  Total', f"${total_tax:.2f}"])
         
         return response
     
@@ -780,9 +926,14 @@ def earnings_statement(request):
         'start_date': start_date,
         'end_date': end_date,
         'transactions': transactions,
-        'total_in': total_in,
-        'total_out': total_out,
+        'total_revenue': total_revenue,
+        'total_commission': total_commission,
         'net_change': net_change,
+        'final_balance': running_balance,
+        'tax_products_gst': tax_products_gst,
+        'tax_products_pst': tax_products_pst,
+        'tax_memberships_gst': tax_memberships_gst,
+        'tax_memberships_pst': tax_memberships_pst,
         'total_gst': total_gst,
         'total_pst': total_pst,
         'total_tax': total_tax,
@@ -1643,3 +1794,186 @@ def export_statement_pdf(seller, start_date, end_date):
     story.append(transactions_table)
     doc.build(story)
     return response
+
+
+@seller_required
+def membership_plans_list(request):
+    """List all membership plans for the seller"""
+    seller = request.user.seller
+    plans = SellerMembershipPlan.objects.filter(seller=seller).order_by('display_order', 'name')
+    
+    return render(request, 'sellers/membership_plans_list.html', {
+        'plans': plans,
+        'seller': seller,
+    })
+
+
+@seller_required
+def membership_plan_add(request):
+    """Add a new membership plan"""
+    seller = request.user.seller
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        slug = request.POST.get('slug', '').strip()
+        price = request.POST.get('price', '0.00')
+        description = request.POST.get('description', '')
+        details = request.POST.get('details', '')
+        is_active = request.POST.get('is_active') == 'on'
+        display_order = request.POST.get('display_order', '0')
+        
+        # Validation
+        if not name:
+            messages.error(request, 'Plan name is required.')
+            return redirect('sellers:membership_plan_add')
+        
+        if not slug:
+            # Auto-generate slug from name
+            slug = name.lower().replace(' ', '-').replace('_', '-')
+            # Remove special characters
+            slug = ''.join(c for c in slug if c.isalnum() or c == '-')
+        
+        # Check if slug already exists for this seller
+        if SellerMembershipPlan.objects.filter(seller=seller, slug=slug).exists():
+            messages.error(request, f'A plan with slug "{slug}" already exists. Please choose a different slug.')
+            return redirect('sellers:membership_plan_add')
+        
+        try:
+            price_decimal = Decimal(str(price))
+            display_order_int = int(display_order) if display_order else 0
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid price or display order.')
+            return redirect('sellers:membership_plan_add')
+        
+        # Create the plan
+        plan = SellerMembershipPlan.objects.create(
+            seller=seller,
+            name=name,
+            slug=slug,
+            price=price_decimal,
+            description=description,
+            details=details,
+            is_active=is_active,
+            display_order=display_order_int,
+        )
+        
+        messages.success(request, f'Membership plan "{plan.name}" has been created successfully!')
+        return redirect('sellers:membership_plans_list')
+    
+    return render(request, 'sellers/membership_plan_form.html', {
+        'seller': seller,
+        'action': 'Add',
+    })
+
+
+@seller_required
+def membership_plan_edit(request, plan_id):
+    """Edit an existing membership plan"""
+    seller = request.user.seller
+    plan = get_object_or_404(SellerMembershipPlan, id=plan_id, seller=seller)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        slug = request.POST.get('slug', '').strip()
+        price = request.POST.get('price', '0.00')
+        description = request.POST.get('description', '')
+        details = request.POST.get('details', '')
+        is_active = request.POST.get('is_active') == 'on'
+        display_order = request.POST.get('display_order', '0')
+        
+        # Validation
+        if not name:
+            messages.error(request, 'Plan name is required.')
+            return redirect('sellers:membership_plan_edit', plan_id=plan_id)
+        
+        if not slug:
+            # Auto-generate slug from name
+            slug = name.lower().replace(' ', '-').replace('_', '-')
+            # Remove special characters
+            slug = ''.join(c for c in slug if c.isalnum() or c == '-')
+        
+        # Check if slug already exists for this seller (excluding current plan)
+        if SellerMembershipPlan.objects.filter(seller=seller, slug=slug).exclude(id=plan_id).exists():
+            messages.error(request, f'A plan with slug "{slug}" already exists. Please choose a different slug.')
+            return redirect('sellers:membership_plan_edit', plan_id=plan_id)
+        
+        try:
+            price_decimal = Decimal(str(price))
+            display_order_int = int(display_order) if display_order else 0
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid price or display order.')
+            return redirect('sellers:membership_plan_edit', plan_id=plan_id)
+        
+        # Check if plan has active members before deactivating
+        if not is_active and plan.is_active and plan.has_active_members():
+            active_count = plan.get_active_member_count()
+            messages.warning(request, f'Cannot deactivate plan "{plan.name}" - it has {active_count} active member subscription(s).')
+            return redirect('sellers:membership_plan_edit', plan_id=plan_id)
+        
+        # Update the plan
+        plan.name = name
+        plan.slug = slug
+        plan.price = price_decimal
+        plan.description = description
+        plan.details = details
+        plan.is_active = is_active
+        plan.display_order = display_order_int
+        plan.save()
+        
+        messages.success(request, f'Membership plan "{plan.name}" has been updated successfully!')
+        return redirect('sellers:membership_plans_list')
+    
+    return render(request, 'sellers/membership_plan_form.html', {
+        'seller': seller,
+        'plan': plan,
+        'action': 'Edit',
+    })
+
+
+@seller_required
+def membership_plan_delete(request, plan_id):
+    """Delete a membership plan"""
+    seller = request.user.seller
+    plan = get_object_or_404(SellerMembershipPlan, id=plan_id, seller=seller)
+    
+    if request.method == 'POST':
+        # Check if plan has active members
+        if plan.has_active_members():
+            active_count = plan.get_active_member_count()
+            messages.error(
+                request,
+                f'Cannot delete plan "{plan.name}" - it has {active_count} active member subscription(s). Please inactivate instead.'
+            )
+            return redirect('sellers:membership_plans_list')
+        
+        plan_name = plan.name
+        plan.delete()
+        messages.success(request, f'Membership plan "{plan_name}" has been deleted successfully!')
+        return redirect('sellers:membership_plans_list')
+    
+    return render(request, 'sellers/membership_plan_confirm_delete.html', {
+        'plan': plan,
+    })
+
+
+@seller_required
+def membership_plan_toggle_active(request, plan_id):
+    """Toggle active/inactive status of a membership plan"""
+    seller = request.user.seller
+    plan = get_object_or_404(SellerMembershipPlan, id=plan_id, seller=seller)
+    
+    if request.method == 'POST':
+        # If trying to deactivate, check for active members
+        if plan.is_active and plan.has_active_members():
+            active_count = plan.get_active_member_count()
+            messages.warning(
+                request,
+                f'Cannot deactivate plan "{plan.name}" - it has {active_count} active member subscription(s).'
+            )
+        else:
+            plan.is_active = not plan.is_active
+            plan.save()
+            status = "activated" if plan.is_active else "deactivated"
+            messages.success(request, f'Membership plan "{plan.name}" has been {status}.')
+    
+    return redirect('sellers:membership_plans_list')

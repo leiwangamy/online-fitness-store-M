@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Membership Plans - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>My Membership Plans</h1>
+    
+    <div style="margin: 20px 0;">
+        <a href="{% url 'sellers:membership_plan_add' %}" class="btn btn-primary">Add New Plan</a>
+        <a href="{% url 'sellers:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+    
+    {% if plans %}
+        <div style="margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background: #2d6a4f; color: white;">
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Name</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Price</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Status</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Active Members</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Display Order</th>
+                        <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                <strong>{{ plan.name }}</strong><br>
+                                <small style="color: #666;">Slug: {{ plan.slug }}</small>
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">{{ plan.price_display }}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                <span style="padding: 4px 8px; border-radius: 4px; font-size: 0.85em; font-weight: bold; {% if plan.is_active %}background: #d4edda; color: #155724;{% else %}background: #f8d7da; color: #721c24;{% endif %}">
+                                    {% if plan.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                {% if plan.has_active_members %}
+                                    <strong style="color: #dc3545;">{{ plan.get_active_member_count }} member(s)</strong>
+                                {% else %}
+                                    0 members
+                                {% endif %}
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">{{ plan.display_order }}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                                    <a href="{% url 'sellers:membership_plan_edit' plan.id %}" class="btn btn-sm btn-primary" style="padding: 5px 10px; font-size: 0.85em;">Edit</a>
+                                    <form method="post" action="{% url 'sellers:membership_plan_toggle_active' plan.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm" style="padding: 5px 10px; font-size: 0.85em; {% if plan.is_active %}background: #ffc107; color: #856404;{% else %}background: #28a745; color: white;{% endif %}; border: none; cursor: pointer;">
+                                            {% if plan.is_active %}Deactivate{% else %}Activate{% endif %}
+                                        </button>
+                                    </form>
+                                    <a href="{% url 'sellers:membership_plan_delete' plan.id %}" class="btn btn-sm btn-danger" style="padding: 5px 10px; font-size: 0.85em;">Delete</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="padding: 40px; text-align: center; background: #f8f9fa; border-radius: 8px; margin: 20px 0;">
+            <p style="font-size: 1.1em; color: #666;">No membership plans yet.</p>
+            <a href="{% url 'sellers:membership_plan_add' %}" class="btn btn-primary" style="margin-top: 15px;">Create Your First Plan</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    font-weight: bold;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #2d6a4f;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.85em;
+}
+</style>
+{% endblock %}
+

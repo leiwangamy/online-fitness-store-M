@@ -1,0 +1,77 @@
+{% extends "admin/change_list.html" %}
+{% load admin_urls %}
+
+{% block result_list %}
+  {{ block.super }}
+  
+  {% if seller_plans %}
+    <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border: 2px solid #28a745; border-radius: 4px;">
+      <h2 style="color: white; background: #00695c; padding: 10px 15px; margin: -20px -20px 15px -20px; border-radius: 4px 4px 0 0;">Seller Membership Plans</h2>
+      <table id="result_list" style="width: 100%;">
+        <thead>
+          <tr>
+            <th scope="col" class="sortable">
+              <div class="text">Name</div>
+            </th>
+            <th scope="col" class="sortable">
+              <div class="text">Slug</div>
+            </th>
+            <th scope="col">
+              <div class="text">Seller</div>
+            </th>
+            <th scope="col">
+              <div class="text">Price</div>
+            </th>
+            <th scope="col">
+              <div class="text">Status</div>
+            </th>
+            <th scope="col">
+              <div class="text">Active Members</div>
+            </th>
+            <th scope="col">
+              <div class="text">Actions</div>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for plan in seller_plans %}
+            <tr class="{% cycle 'row1' 'row2' %}">
+              <td>
+                <a href="{% url 'admin:sellers_sellermembershipplan_change' plan.id %}">{{ plan.name }}</a>
+              </td>
+              <td>{{ plan.slug }}</td>
+              <td>
+                <strong style="color: #28a745;">{{ plan.seller.display_name|default:plan.seller.user.username }}</strong>
+              </td>
+              <td>${{ plan.price }} / month</td>
+              <td>
+                {% if plan.is_active %}
+                  <img src="/static/admin/img/icon-yes.svg" alt="True">
+                {% else %}
+                  <img src="/static/admin/img/icon-no.svg" alt="False">
+                {% endif %}
+              </td>
+              <td>
+                {% if plan.get_active_member_count > 0 %}
+                  <strong style="color: red;">{{ plan.get_active_member_count }} active member(s)</strong>
+                {% else %}
+                  0 active members
+                {% endif %}
+              </td>
+              <td>
+                <a href="{% url 'admin:sellers_sellermembershipplan_change' plan.id %}" class="button">Edit</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 20px; color: #666;">
+                No seller membership plans found.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}
+

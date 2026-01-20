@@ -160,6 +160,8 @@ TEMPLATES = [
                 "members.context_processors.membership_context",
                 "cart.context_processors.cart_context",
                 "orders.context_processors.staff_notifications",  # Staff notifications (refund requests)
+                "core.context_processors.admin_settings",  # Admin settings (membership visibility toggle)
+                "core.context_processors.membership_availability",  # Membership availability (for navigation)
             ],
         },
     },
