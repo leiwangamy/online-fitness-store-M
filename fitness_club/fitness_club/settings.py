@@ -114,6 +114,7 @@ INSTALLED_APPS = [
     "members",
     "accounts",
     "core",
+    "api",  # API app - central hub for all API endpoints
     "profiles.apps.ProfilesConfig",
     "sellers.apps.SellersConfig",
 
