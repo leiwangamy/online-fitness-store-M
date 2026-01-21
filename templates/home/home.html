@@ -269,7 +269,9 @@
 <!-- Action Buttons Section -->
 <div class="action-buttons">
     <a href="{% url 'products:list' %}" class="action-button">Browse All Products</a>
+    {% if admin_settings.show_membership_functions %}
     <a href="{% url 'members:membership_plans' %}" class="action-button">View Membership Plans</a>
+    {% endif %}
 </div>
 
 <!-- Featured Products Section -->

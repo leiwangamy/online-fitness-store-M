@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-  My Subscriptions | Fitness Club
+  Platform Subscriptions | Fitness Club
 {% endblock %}
 
 {% block content %}
@@ -125,12 +125,12 @@
 </style>
 
 <div class="subscriptions-container">
-    <h1>My Subscriptions</h1>
+    <h1>Platform Subscriptions</h1>
 
     <!-- Platform Membership Section -->
-    {% if platform_memberships %}
+    {% if has_memberships %}
     <div class="membership-section">
-        <h2>Platform Memberships</h2>
+        <h2>Your Platform Memberships</h2>
         {% for membership_data in platform_memberships %}
         <div class="membership-item">
             <div class="membership-info">
@@ -151,43 +151,9 @@
                         <strong>Expires:</strong> {{ membership_data.expires|date:"M d, Y" }}
                     </div>
                     {% endif %}
-                    <div style="font-size: 0.9em; color: #666;">
-                        <strong>Started:</strong> {{ membership_data.started|date:"M d, Y" }}
-                    </div>
-                </div>
-            </div>
-            <div>
-                <a href="{% url 'members:manage_subscription' %}?membership_id={{ membership_data.user_membership.id }}" class="manage-button">Manage</a>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Seller Memberships Section -->
-    {% if seller_memberships %}
-    <div class="membership-section">
-        <h2>Seller Memberships</h2>
-        {% for membership_data in seller_memberships %}
-        <div class="membership-item">
-            <div class="membership-info">
-                <h3>
-                    {% if membership_data.seller %}
-                        {{ membership_data.seller.display_name|default:membership_data.seller.user.username }} – 
-                    {% endif %}
-                    {{ membership_data.plan.name }}
-                    <span class="status-badge {% if membership_data.status == 'Active' %}status-active{% else %}status-inactive{% endif %}" style="font-size: 0.7em; margin-left: 10px;">
-                        ({{ membership_data.status }})
-                    </span>
-                </h3>
-                <div class="membership-details">
-                    {% if membership_data.next_billing %}
-                    <div>
-                        <strong>Next billing:</strong> {{ membership_data.next_billing|date:"M d, Y" }}
-                    </div>
-                    {% elif membership_data.expires %}
-                    <div>
-                        <strong>Expires:</strong> {{ membership_data.expires|date:"M d, Y" }}
+                    {% if not membership_data.auto_renew and membership_data.status == 'Active' %}
+                    <div style="color: #856404;">
+                        <strong>Auto-renewal:</strong> Cancelled
                     </div>
                     {% endif %}
                     <div style="font-size: 0.9em; color: #666;">
@@ -201,17 +167,20 @@
         </div>
         {% endfor %}
     </div>
-    {% endif %}
-
-    <!-- No Memberships -->
-    {% if not has_memberships %}
+    {% else %}
     <div class="no-memberships">
-        <p>You don't have any active subscriptions.</p>
+        <p>You don't have any active platform subscriptions.</p>
         <p style="margin-top: 20px;">
-            <a href="{% url 'members:membership_plans' %}">Browse membership plans</a> to get started.
+            <a href="{% url 'members:membership_plans' %}">Browse platform membership plans</a> to get started.
         </p>
     </div>
     {% endif %}
+
+    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+        <a href="{% url 'members:manage_subscription' %}" class="manage-button" style="margin-right: 10px;">Manage Subscriptions</a>
+        <a href="{% url 'members:membership_plans' %}" class="manage-button">Browse Plans</a>
+    </div>
 </div>
 
 {% endblock %}
+

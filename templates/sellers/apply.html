@@ -5,6 +5,19 @@
 
 {% block extra_css %}
 <style>
+  .back-link {
+    text-align: center;
+    margin: 20px 0;
+  }
+  .back-link a {
+    color: #2d6a4f;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .back-link a:hover {
+    text-decoration: underline;
+  }
+<style>
   .seller-application-card {
     max-width: 600px;
     padding: 40px;
@@ -157,6 +170,10 @@
 {% endblock %}
 
 {% block content %}
+<div class="back-link">
+  <a href="{% url 'sellers:portal' %}">← Back to Seller Portal</a>
+</div>
+
 <div class="seller-application-card">
     <h1>Become a Seller</h1>
     <p>Apply to start selling your products on our platform!</p>

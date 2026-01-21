@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Manage Seller Membership - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+
+<style>
+    .manage-subscription-card {
+        max-width: 700px;
+        margin: 20px auto;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .manage-subscription-card h1 {
+        text-align: center;
+        color: #1b4332;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e0e0e0;
+    }
+
+    .section {
+        margin-bottom: 35px;
+    }
+
+    .section h2 {
+        color: #2d6a4f;
+        font-size: 1.3em;
+        margin-bottom: 20px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .membership-item {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #2d6a4f;
+        margin-bottom: 20px;
+    }
+
+    .membership-item h3 {
+        color: #1b4332;
+        margin-top: 0;
+        margin-bottom: 15px;
+        font-size: 1.2em;
+    }
+
+    .membership-item p {
+        margin: 8px 0;
+        font-size: 1em;
+    }
+
+    .membership-item strong {
+        color: #1b4332;
+        min-width: 120px;
+        display: inline-block;
+    }
+
+    .subscription-actions {
+        margin-top: 15px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+    }
+
+    .available-plans {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid #2196f3;
+    }
+
+    .plan-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .plan-list li {
+        padding: 15px;
+        margin-bottom: 10px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 6px;
+        border: 1px solid #999;
+        cursor: pointer;
+        font-size: 14px;
+        margin-right: 10px;
+        margin-top: 10px;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-cancel {
+        background: #dc3545;
+        color: white;
+        border-color: #dc3545;
+    }
+
+    .btn-cancel:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        color: white;
+    }
+
+    .btn-resume {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+
+    .btn-resume:hover {
+        background: #218838;
+        border-color: #1e7e34;
+        color: white;
+    }
+
+    .btn-subscribe {
+        background: #1b4332;
+        color: white;
+        border-color: #1b4332;
+    }
+
+    .btn-subscribe:hover {
+        background: #2d5a3d;
+        border-color: #2d5a3d;
+        color: white;
+    }
+
+    .status-active {
+        color: #28a745;
+        font-weight: bold;
+    }
+
+    .status-inactive {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .no-memberships {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 1.1em;
+    }
+</style>
+
+<div class="manage-subscription-card">
+    <h1>Manage Seller Membership</h1>
+
+    <!-- Active Seller Memberships Section -->
+    {% if has_memberships %}
+    <div class="section">
+        <h2>Your Active Seller Memberships</h2>
+        {% for user_membership in active_memberships %}
+            {% with plan_obj=user_membership.get_plan_object %}
+            <div class="membership-item">
+                <h3>
+                    {% if plan_obj %}
+                        {{ plan_obj.name }}
+                        {% if plan_obj.seller %}
+                            <span style="font-size: 0.8em; color: #666; font-weight: normal;">
+                                ({{ plan_obj.seller.display_name|default:plan_obj.seller.user.username }})
+                            </span>
+                        {% endif %}
+                    {% else %}
+                        {{ user_membership.plan_identifier }}
+                    {% endif %}
+                </h3>
+                <p><strong>Status:</strong> 
+                    {% if user_membership.is_currently_active %}
+                        <span class="status-active">Active</span>
+                    {% else %}
+                        <span class="status-inactive">Expired</span>
+                    {% endif %}
+                </p>
+                <p><strong>Started:</strong> {{ user_membership.started_at|date:"M d, Y" }}</p>
+                <p><strong>Expires:</strong> {{ user_membership.expires_at|date:"M d, Y" }}</p>
+                {% if user_membership.next_billing_date %}
+                    <p><strong>Next billing:</strong> {{ user_membership.next_billing_date|date:"M d, Y" }}</p>
+                {% endif %}
+                <p><strong>Auto-renewal:</strong> 
+                    {% if user_membership.auto_renew %}
+                        <span class="status-active">Enabled</span>
+                    {% else %}
+                        <span class="status-inactive">Disabled</span>
+                    {% endif %}
+                </p>
+                
+                <div class="subscription-actions">
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="membership_id" value="{{ user_membership.id }}">
+                        {% if user_membership.auto_renew %}
+                            <button type="submit" name="cancel_membership" class="btn btn-cancel">
+                                Cancel Auto-Renewal
+                            </button>
+                        {% else %}
+                            <button type="submit" name="resume_membership" class="btn btn-resume">
+                                Resume Auto-Renewal
+                            </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-memberships">
+        <p>You don't have any active seller memberships.</p>
+    </div>
+    {% endif %}
+
+    <!-- Available Plans Section -->
+    <div class="section">
+        <h2>Subscribe to Additional Seller Plans</h2>
+        <div class="available-plans">
+            {% if seller_plans %}
+                <p style="margin-bottom: 15px;">You can subscribe to multiple seller plans. Select a plan below to add it to your subscriptions:</p>
+                <ul class="plan-list">
+                    {% for plan in seller_plans %}
+                    <li>
+                        <div>
+                            <strong>{{ plan.name }}</strong> 
+                            <span style="color: #666;">({{ plan.seller.display_name|default:plan.seller.user.username }})</span>
+                            - {{ plan.price_display }}
+                        </div>
+                        <form method="post" action="{% url 'members:my_membership' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="plan_slug" value="{{ plan.get_full_slug }}">
+                            <input type="hidden" name="plan_type" value="seller">
+                            <button type="submit" name="subscribe_plan" class="btn btn-subscribe" style="margin-top: 0;">
+                                Subscribe
+                            </button>
+                        </form>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No additional seller plans available. You are already subscribed to all available plans.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="{% url 'members:my_seller_subscriptions' %}" class="btn" style="background: #6c757d; color: white; border-color: #6c757d;">
+            View All Seller Subscriptions
+        </a>
+        <a href="{% url 'members:seller_membership_plans' %}" class="btn" style="background: #6c757d; color: white; border-color: #6c757d;">
+            Browse All Plans
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+

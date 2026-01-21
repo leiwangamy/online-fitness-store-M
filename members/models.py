@@ -85,8 +85,161 @@ class MemberProfile(models.Model):
             self.last_billed_date = today
             self.next_billing_date = today + timedelta(days=30)
             self.save()
+    
+    def get_active_memberships(self):
+        """Get all active UserMembership objects for this user"""
+        return UserMembership.objects.filter(
+            user=self.user,
+            is_active=True
+        ).exclude(expires_at__lt=timezone.now())
+    
+    def has_membership(self, plan_identifier: str) -> bool:
+        """Check if user has an active membership for the given plan identifier"""
+        return UserMembership.objects.filter(
+            user=self.user,
+            plan_identifier=plan_identifier,
+            is_active=True
+        ).exclude(expires_at__lt=timezone.now()).exists()
+    
+    def subscribe_to_plan(self, plan_identifier: str, plan_type: str) -> 'UserMembership':
+        """
+        Subscribe to a plan. Returns the UserMembership object.
+        If already subscribed, returns the existing membership.
+        """
+        # Check if already subscribed
+        existing = UserMembership.objects.filter(
+            user=self.user,
+            plan_identifier=plan_identifier
+        ).first()
+        
+        if existing:
+            # If exists but expired, reactivate it
+            if existing.expires_at < timezone.now():
+                now = timezone.now()
+                existing.expires_at = now + timedelta(days=30)
+                existing.is_active = True
+                existing.auto_renew = True
+                existing.last_billed_date = now.date()
+                existing.next_billing_date = (existing.expires_at.date() + timedelta(days=1))
+                existing.save()
+            return existing
+        
+        # Create new membership
+        now = timezone.now()
+        expiry = now + timedelta(days=30)
+        membership = UserMembership.objects.create(
+            user=self.user,
+            plan_identifier=plan_identifier,
+            plan_type=plan_type,
+            is_active=True,
+            expires_at=expiry,
+            auto_renew=True,
+            last_billed_date=now.date(),
+            next_billing_date=(expiry.date() + timedelta(days=1))
+        )
+        return membership
 
 # Note: Member profile creation signal is in signals.py to avoid duplicates
+
+
+class UserMembership(models.Model):
+    """
+    Individual membership subscription for a user.
+    Allows users to have multiple memberships simultaneously (one per plan).
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="user_memberships",
+        help_text="User who has this membership"
+    )
+    
+    # Plan identifier - can be platform plan slug or seller plan full slug (seller_X_slug)
+    plan_identifier = models.CharField(
+        max_length=200,
+        help_text="Plan identifier: platform plan slug or seller plan full slug (seller_X_slug)"
+    )
+    
+    # Plan type: 'platform' or 'seller'
+    plan_type = models.CharField(
+        max_length=20,
+        choices=[('platform', 'Platform'), ('seller', 'Seller')],
+        help_text="Type of membership plan"
+    )
+    
+    # Membership status
+    is_active = models.BooleanField(default=True, help_text="Whether this membership is currently active")
+    started_at = models.DateTimeField(auto_now_add=True, help_text="When the membership started")
+    expires_at = models.DateTimeField(help_text="When the membership expires")
+    auto_renew = models.BooleanField(default=True, help_text="Whether to auto-renew this membership")
+    
+    # Billing information
+    next_billing_date = models.DateField(blank=True, null=True, help_text="Date of next renewal charge")
+    last_billed_date = models.DateField(blank=True, null=True, help_text="Most recent billing date")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "User Membership"
+        verbose_name_plural = "User Memberships"
+        ordering = ['-started_at']
+        # Prevent duplicate subscriptions to the same plan
+        unique_together = [['user', 'plan_identifier']]
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['expires_at']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.plan_identifier}"
+    
+    @property
+    def is_currently_active(self) -> bool:
+        """Check if this membership is currently active (not expired)"""
+        if not self.is_active:
+            return False
+        return self.expires_at > timezone.now()
+    
+    def get_plan_object(self):
+        """Get the actual plan object (MembershipPlan or SellerMembershipPlan)"""
+        if self.plan_type == 'platform':
+            try:
+                return MembershipPlan.objects.get(slug=self.plan_identifier)
+            except MembershipPlan.DoesNotExist:
+                return None
+        else:  # seller
+            try:
+                from sellers.models import SellerMembershipPlan
+                parts = self.plan_identifier.split('_', 2)
+                if len(parts) == 3:
+                    seller_id = parts[1]
+                    slug = parts[2]
+                    return SellerMembershipPlan.objects.get(seller_id=seller_id, slug=slug)
+            except Exception:
+                return None
+        return None
+    
+    def cancel(self):
+        """Cancel this membership (stop auto-renewal)"""
+        self.auto_renew = False
+        self.next_billing_date = None
+        self.save()
+    
+    def resume(self):
+        """Resume auto-renewal for this membership"""
+        self.auto_renew = True
+        if self.expires_at:
+            self.next_billing_date = (self.expires_at.date() + timedelta(days=1))
+        self.save()
+    
+    def renew(self):
+        """Renew this membership for another 30 days"""
+        now = timezone.now()
+        self.expires_at = now + timedelta(days=30)
+        self.last_billed_date = now.date()
+        self.next_billing_date = (self.expires_at.date() + timedelta(days=1))
+        self.save()
 
 
 class MembershipPlan(models.Model):

@@ -10,6 +10,7 @@ from django.views.static import serve
 from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.authtoken.views import obtain_auth_token
 from core.admin_views import toggle_platform_membership, toggle_seller_membership, backup_database
 
 # Ensure all admin.py files are discovered
@@ -66,6 +67,10 @@ urlpatterns = [
     
     # sellers app
     path("seller/", include(("sellers.urls", "sellers"), namespace="sellers")),
+    
+    # API endpoints
+    path("api/", include("products.api_urls")),
+    path("api/auth/token/", obtain_auth_token, name="api_token_auth"),
 ]
 
 # Serve media files (in production, consider using nginx or a CDN)

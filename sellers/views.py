@@ -16,7 +16,7 @@ import json
 from django.http import HttpResponse, JsonResponse
 
 from .models import Seller, SellerMembershipPlan
-from .forms import SellerApplicationForm, SellerProductForm
+from .forms import SellerApplicationForm, SellerProductForm, SellerProfileForm
 from .decorators import seller_required
 from products.models import Product
 from orders.models import OrderItem, Order, Refund
@@ -1985,3 +1985,23 @@ def membership_plan_toggle_active(request, plan_id):
             messages.success(request, f'Membership plan "{plan.name}" has been {status}.')
     
     return redirect('sellers:membership_plans_list')
+
+
+@seller_required
+def seller_profile(request):
+    """Seller profile page - allows sellers to update their profile information"""
+    seller = request.user.seller
+    
+    if request.method == 'POST':
+        form = SellerProfileForm(request.POST, instance=seller)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your seller profile has been updated successfully!')
+            return redirect('sellers:seller_profile')
+    else:
+        form = SellerProfileForm(instance=seller)
+    
+    return render(request, 'sellers/seller_profile.html', {
+        'seller': seller,
+        'form': form,
+    })

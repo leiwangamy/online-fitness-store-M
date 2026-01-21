@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-  {% if current_seller_plan %}{{ current_seller_plan.seller.display_name|default:current_seller_plan.seller.user.username }} Membership - {% elif current_plan %}Platform Membership - {% else %}Manage Membership - {% endif %}{{ block.super }}
+  Manage Subscription - {{ block.super }}
 {% endblock %}
 
 {% block content %}
@@ -41,6 +41,7 @@
         padding: 20px;
         border-radius: 8px;
         border-left: 4px solid #2d6a4f;
+        margin-bottom: 20px;
     }
 
     .subscription-info p {
@@ -50,7 +51,7 @@
 
     .subscription-info strong {
         color: #1b4332;
-        min-width: 100px;
+        min-width: 120px;
         display: inline-block;
     }
 
@@ -128,101 +129,143 @@
         color: #dc3545;
         font-weight: bold;
     }
+
+    .membership-type-label {
+        display: inline-block;
+        padding: 4px 8px;
+        background: #e3f2fd;
+        color: #1976d2;
+        border-radius: 4px;
+        font-size: 0.85em;
+        font-weight: bold;
+        margin-left: 10px;
+    }
 </style>
 
 <div class="manage-subscription-card">
     <h1>Manage Subscription</h1>
-
-    <!-- Current Subscription Section -->
-    <div class="section">
-        <h2>Current Subscription</h2>
-        <div class="subscription-info">
-            {% if profile.is_active_member %}
-                {% if current_seller_plan %}
-                    <p><strong>Plan:</strong> {{ current_seller_plan.name }} ({{ current_seller_plan.seller.display_name|default:current_seller_plan.seller.user.username }})</p>
-                    <p><strong>Price:</strong> {{ current_seller_plan.price_display }}</p>
-                {% elif current_plan %}
-                    <p><strong>Plan:</strong> {{ current_plan.name }}</p>
-                    <p><strong>Price:</strong> {{ current_plan.price_display }}</p>
-                {% else %}
-                    <p><strong>Plan:</strong> {{ profile.membership_level }}</p>
-                {% endif %}
-                <p><strong>Status:</strong> 
-                    {% if profile.auto_renew %}
-                        <span class="status-active">Active</span>
-                    {% else %}
-                        <span class="status-inactive">Cancelled (ends on {{ profile.membership_expires|date:"M d, Y" }})</span>
-                    {% endif %}
-                </p>
-                {% if profile.membership_expires %}
-                    <p><strong>Ends:</strong> {{ profile.membership_expires|date:"M d, Y" }}</p>
-                {% endif %}
-            {% else %}
-                <p>No active subscription.</p>
-            {% endif %}
-        </div>
+    {% if selected_membership %}
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="{% url 'members:my_subscriptions' %}" style="color: #1b4332; text-decoration: none; font-size: 0.9em;">
+            ← Back to My Subscriptions
+        </a>
     </div>
+    {% endif %}
 
-    <!-- Change Plan Section -->
-    {% if profile.is_active_member %}
-    <div class="section">
-        <h2>Change Plan</h2>
-        <div class="change-plan-form">
-            <form method="post">
-                {% csrf_token %}
-                <select name="plan_slug" required>
-                    <option value="">Select plan...</option>
-                    {% for plan in plans %}
-                        <option value="{{ plan.slug }}" {% if profile.membership_level == plan.slug %}selected{% endif %}>
-                            {{ plan.name }} - {{ plan.price_display }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <input type="hidden" name="plan_type" id="plan_type_input" value="admin">
-                <button type="submit" name="update_plan" class="btn btn-primary">
-                    Update Plan
-                </button>
-            </form>
-            <script>
-                // Set plan_type based on selected plan
-                document.querySelector('select[name="plan_slug"]').addEventListener('change', function() {
-                    const selectedValue = this.value;
-                    const planTypeInput = document.getElementById('plan_type_input');
-                    if (selectedValue && selectedValue.startsWith('seller_')) {
-                        planTypeInput.value = 'seller';
-                    } else {
-                        planTypeInput.value = 'admin';
-                    }
-                });
-            </script>
-        </div>
-    </div>
-
-    <!-- Subscription Actions Section -->
-    <div class="section">
-        <h2>Subscription Actions</h2>
-        <div class="subscription-actions">
-            <form method="post">
-                {% csrf_token %}
-                {% if profile.auto_renew %}
-                    <button type="submit" name="cancel_membership" class="btn btn-cancel">
-                        Cancel Subscription
-                    </button>
-                {% else %}
-                    <button type="submit" name="resume_membership" class="btn btn-resume">
-                        Resume Subscription
-                    </button>
-                    {% if profile.membership_expires %}
-                        <p style="margin-top: 15px; color: #666; font-size: 0.95em;">
-                            Your subscription will end on <strong>{{ profile.membership_expires|date:"M d, Y" }}</strong>.
+    {% if has_memberships %}
+        {% for user_membership in active_memberships %}
+            {% with plan_obj=user_membership.get_plan_object %}
+            <!-- Current Subscription Section -->
+            <div class="section">
+                <h2>Current Subscription</h2>
+                <div class="subscription-info">
+                    {% if plan_obj %}
+                        <p><strong>Plan:</strong> {{ plan_obj.name }}
+                            <span class="membership-type-label">
+                                {% if user_membership.plan_type == 'platform' %}Platform{% else %}Seller{% endif %}
+                            </span>
+                            {% if user_membership.plan_type == 'seller' and plan_obj.seller %}
+                                <span style="color: #666; font-size: 0.9em;">({{ plan_obj.seller.display_name|default:plan_obj.seller.user.username }})</span>
+                            {% endif %}
                         </p>
+                        <p><strong>Price:</strong> {{ plan_obj.price_display }}</p>
+                    {% else %}
+                        <p><strong>Plan:</strong> {{ user_membership.plan_identifier }}</p>
                     {% endif %}
-                {% endif %}
-            </form>
+                    <p><strong>Status:</strong> 
+                        {% if user_membership.auto_renew and user_membership.is_currently_active %}
+                            <span class="status-active">Active</span>
+                        {% elif not user_membership.auto_renew and user_membership.is_currently_active %}
+                            <span class="status-inactive">Cancelled (ends on {{ user_membership.expires_at|date:"M d, Y" }})</span>
+                        {% else %}
+                            <span class="status-inactive">Expired</span>
+                        {% endif %}
+                    </p>
+                    {% if user_membership.expires_at %}
+                        <p><strong>Ends:</strong> {{ user_membership.expires_at|date:"M d, Y" }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Change Plan Section -->
+            <div class="section">
+                <h2>Change Plan</h2>
+                <div class="change-plan-form">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="membership_id" value="{{ user_membership.id }}">
+                        <select name="plan_slug" required>
+                            <option value="">Select plan...</option>
+                            {% if user_membership.plan_type == 'platform' %}
+                                {% for plan in all_admin_plans %}
+                                    <option value="{{ plan.slug }}" data-type="platform" {% if plan.slug == user_membership.plan_identifier %}selected{% endif %}>
+                                        {{ plan.name }} - {{ plan.price_display }}
+                                    </option>
+                                {% endfor %}
+                            {% else %}
+                                {% for plan in all_seller_plans %}
+                                    <option value="{{ plan.get_full_slug }}" data-type="seller" {% if plan.get_full_slug == user_membership.plan_identifier %}selected{% endif %}>
+                                        {{ plan.name }} ({{ plan.seller.display_name|default:plan.seller.user.username }}) - {{ plan.price_display }}
+                                    </option>
+                                {% endfor %}
+                            {% endif %}
+                        </select>
+                        <input type="hidden" name="plan_type" id="plan_type_input_{{ user_membership.id }}" value="{{ user_membership.plan_type }}">
+                        <button type="submit" name="update_plan" class="btn btn-primary">
+                            Update Plan
+                        </button>
+                    </form>
+                    <script>
+                        // Set plan_type based on selected plan
+                        (function() {
+                            const select = document.querySelector('select[name="plan_slug"]');
+                            const planTypeInput = document.getElementById('plan_type_input_{{ user_membership.id }}');
+                            if (select && planTypeInput) {
+                                select.addEventListener('change', function() {
+                                    const selectedOption = this.options[this.selectedIndex];
+                                    if (selectedOption && selectedOption.dataset.type) {
+                                        planTypeInput.value = selectedOption.dataset.type;
+                                    }
+                                });
+                            }
+                        })();
+                    </script>
+                </div>
+            </div>
+
+            <!-- Subscription Actions Section -->
+            <div class="section">
+                <h2>Subscription Actions</h2>
+                <div class="subscription-actions">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="membership_id" value="{{ user_membership.id }}">
+                        {% if user_membership.auto_renew %}
+                            <button type="submit" name="cancel_membership" class="btn btn-cancel">
+                                Cancel Subscription
+                            </button>
+                        {% else %}
+                            <button type="submit" name="resume_membership" class="btn btn-resume">
+                                Resume Subscription
+                            </button>
+                            {% if user_membership.expires_at %}
+                                <p style="margin-top: 15px; color: #666; font-size: 0.95em;">
+                                    Your subscription will end on <strong>{{ user_membership.expires_at|date:"M d, Y" }}</strong>.
+                                </p>
+                            {% endif %}
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    {% else %}
+        <div class="section">
+            <div class="subscription-info">
+                <p>No active subscription.</p>
+            </div>
         </div>
-    </div>
     {% endif %}
 </div>
 
 {% endblock %}
-

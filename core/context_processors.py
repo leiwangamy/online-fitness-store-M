@@ -53,7 +53,7 @@ def membership_availability(request):
         
         # Check if seller membership plans exist and are active (only if seller membership is enabled)
         if seller_enabled:
-            seller_plans = SellerMembershipPlan.objects.filter(is_active=True).select_related('seller').order_by('seller__display_name', 'display_order', 'name')
+            seller_plans = SellerMembershipPlan.objects.filter(is_active=True, is_approved=True).select_related('seller').order_by('seller__display_name', 'display_order', 'name')
             has_seller_plans = seller_plans.exists()
         else:
             seller_plans = []

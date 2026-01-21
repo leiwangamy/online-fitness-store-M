@@ -144,11 +144,7 @@
         {# Single seller - show their custom intro text #}
         <div class="info-message">
             {% if user.is_authenticated %}
-                {% if is_member and current_seller_plan and current_seller_plan.seller.id == plans_by_seller.0.grouper.id %}
-                    <p><strong>You are currently subscribed to <strong style="color: #1b4332;">{{ current_seller_plan.name }}</strong> from {{ current_seller_plan.seller.display_name|default:current_seller_plan.seller.user.username }}. You can change your plan below or manage your subscription.</strong></p>
-                {% else %}
-                    <p><strong>{{ plans_by_seller.0.grouper.membership_intro_text|default:"Choose a seller membership plan that fits your needs." }}</strong></p>
-                {% endif %}
+                <p><strong>{{ plans_by_seller.0.grouper.membership_intro_text|default:"Choose a seller membership plan that fits your needs." }}</strong></p>
             {% else %}
                 <p><strong>{{ plans_by_seller.0.grouper.membership_intro_text|default:"Choose a seller membership plan that fits your needs. You'll need to sign in to subscribe." }}</strong></p>
             {% endif %}
@@ -157,11 +153,7 @@
         {# Multiple sellers - show generic message at top, seller-specific intros per group #}
         <div class="info-message">
             {% if user.is_authenticated %}
-                {% if is_member and current_seller_plan %}
-                    <p><strong>You are currently subscribed to <strong style="color: #1b4332;">{{ current_seller_plan.name }}</strong> from {{ current_seller_plan.seller.display_name|default:current_seller_plan.seller.user.username }}. You can change your plan below or manage your subscription.</strong></p>
-                {% else %}
-                    <p><strong>Choose a seller membership plan that fits your needs.</strong></p>
-                {% endif %}
+                <p><strong>Choose a seller membership plan that fits your needs.</strong></p>
             {% else %}
                 <p><strong>Choose a seller membership plan that fits your needs. You'll need to sign in to subscribe.</strong></p>
             {% endif %}
@@ -184,12 +176,12 @@
             {% endif %}
             <div class="plans" style="display: flex; gap: 20px; flex-wrap: wrap;">
               {% for plan in seller_group.list %}
-                <div class="plan" {% if is_member and current_seller_plan and current_seller_plan.id == plan.id %}style="border: 2px solid #1b4332; background: #e8f5e9;"{% endif %}>
+                <div class="plan" {% if plan.get_full_slug in subscribed_plan_identifiers %}style="border: 2px solid #1b4332; background: #e8f5e9;"{% endif %}>
                   <div class="plan-content">
                     <h3>
                       {{ plan.name }}
-                      {% if is_member and current_seller_plan and current_seller_plan.id == plan.id %}
-                        <span style="font-size: 0.7em; color: #1b4332; font-weight: normal;">(Current Plan)</span>
+                      {% if plan.get_full_slug in subscribed_plan_identifiers %}
+                        <span style="font-size: 0.7em; color: #1b4332; font-weight: normal;">(Subscribed)</span>
                       {% endif %}
                     </h3>
                     <div class="plan-description">{{ plan.description|safe }}</div>
@@ -200,19 +192,10 @@
                   <div class="plan-button-container">
                     <p class="plan-price"><strong>{{ plan.price_display }}</strong></p>
                     {% if user.is_authenticated %}
-                      {% if is_member and current_seller_plan and current_seller_plan.id == plan.id %}
-                        <a href="{% url 'members:manage_subscription' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
-                          Manage Plan
+                      {% if plan.get_full_slug in subscribed_plan_identifiers %}
+                        <a href="{% url 'members:my_seller_subscriptions' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                          Manage Subscription
                         </a>
-                      {% elif is_member and current_seller_plan %}
-                        <form method="post" action="{% url 'members:seller_membership_plans' %}" style="display: inline;">
-                          {% csrf_token %}
-                          <input type="hidden" name="plan_slug" value="{{ plan.get_full_slug }}">
-                          <input type="hidden" name="plan_type" value="seller">
-                          <button type="submit" name="subscribe_plan" class="btn btn-primary">
-                            Change to {{ plan.name }}
-                          </button>
-                        </form>
                       {% else %}
                         <form method="post" action="{% url 'members:seller_membership_plans' %}" style="display: inline;">
                           {% csrf_token %}

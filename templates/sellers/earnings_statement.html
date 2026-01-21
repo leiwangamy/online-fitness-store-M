@@ -155,34 +155,42 @@
 
   .transaction-table th,
   .transaction-table td {
-    padding: 12px;
+    padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #ddd;
+    font-size: 0.95rem;
   }
 
   .transaction-table th {
-    background: #f5f5f5;
+    background: #2d6a4f;
+    color: white;
     font-weight: bold;
     position: sticky;
     top: 0;
+    border-bottom: 2px solid #1b4332;
   }
 
-  .transaction-table tr:hover {
+  .transaction-table tbody tr:hover {
     background: #f9f9f9;
   }
 
+  .transaction-table tbody tr:last-child {
+    border-bottom: 2px solid #333;
+  }
+
   .transaction-table .amount-in {
-    color: #2d6a4f;
+    color: #000;
     font-weight: bold;
   }
 
   .transaction-table .amount-out {
-    color: #dc3545;
+    color: #000;
     font-weight: bold;
   }
 
   .transaction-table .balance {
     font-weight: bold;
+    color: #000;
   }
 
   .tax-summary {
@@ -200,44 +208,9 @@
     font-size: 1.2rem;
   }
 
-  .tax-toggle {
-    margin-bottom: 15px;
-  }
-
-  .tax-toggle label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #2d6a4f;
-  }
-
-  .tax-details {
-    display: none;
-    margin-top: 15px;
-  }
-
-  .tax-details.show {
-    display: block;
-  }
-
-  .tax-details-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-  }
-
-  .tax-details-table th,
-  .tax-details-table td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-  }
-
-  .tax-details-table th {
-    background: #f5f5f5;
-    font-weight: bold;
+  .tax-summary h3 {
+    margin: 0 0 8px 0;
+    font-size: 1rem;
   }
 
   .export-section {
@@ -308,22 +281,8 @@
     </div>
     
     <div class="period-summary">
-        <h2>Period Summary</h2>
+        <h2>Seller Statement</h2>
         <div class="date-range">({{ start_date|date:"M d, Y" }} – {{ end_date|date:"M d, Y" }})</div>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <div class="summary-label">Total In</div>
-                <div class="summary-value in">${{ total_in|floatformat:2 }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Total Out</div>
-                <div class="summary-value out">${{ total_out|floatformat:2 }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Net Change</div>
-                <div class="summary-value net">${{ net_change|floatformat:2 }}</div>
-            </div>
-        </div>
     </div>
     
     <div class="transaction-section">
@@ -332,31 +291,29 @@
             <thead>
                 <tr>
                     <th>Date</th>
+                    <th>Source</th>
                     <th>Description</th>
-                    <th style="text-align: right;">In</th>
-                    <th style="text-align: right;">Out</th>
+                    <th style="text-align: right;">Amount</th>
                     <th style="text-align: right;">Balance</th>
                 </tr>
             </thead>
             <tbody>
                 {% for t in transactions %}
                 <tr>
-                    <td>{{ t.date|date:"M d, Y" }}</td>
+                    <td>{{ t.date|date:"M d" }}</td>
+                    <td>{{ t.source }}</td>
                     <td>
                         {% if t.type == 'order' %}
-                            <a href="{% url 'sellers:order_detail' t.order_id %}" style="color: #2d6a4f;">{{ t.description }}</a>
+                            <a href="{% url 'sellers:order_detail' t.order_id %}" style="color: #2d6a4f; text-decoration: none;">{{ t.description }}</a>
                         {% else %}
                             {{ t.description }}
                         {% endif %}
                     </td>
                     <td style="text-align: right;">
-                        {% if t.in > 0 %}
-                            <span class="amount-in">${{ t.in|floatformat:2 }}</span>
-                        {% endif %}
-                    </td>
-                    <td style="text-align: right;">
-                        {% if t.out > 0 %}
-                            <span class="amount-out">${{ t.out|floatformat:2 }}</span>
+                        {% if t.amount >= 0 %}
+                            <span class="amount-in">+${{ t.amount|floatformat:2 }}</span>
+                        {% else %}
+                            <span class="amount-out">${{ t.amount|floatformat:2 }}</span>
                         {% endif %}
                     </td>
                     <td style="text-align: right;" class="balance">${{ t.balance|floatformat:2 }}</td>
@@ -366,33 +323,88 @@
                     <td colspan="5" style="text-align: center; color: #666; padding: 30px;">No transactions in this period.</td>
                 </tr>
                 {% endfor %}
+                {% if transactions and final_balance != 0 %}
+                <tr style="background: #f5f5f5; font-weight: bold; border-top: 2px solid #333;">
+                    <td colspan="3" style="text-align: right;">Total Gross Revenue</td>
+                    <td style="text-align: right; color: #000;">+${{ total_revenue|floatformat:2 }}</td>
+                    <td></td>
+                </tr>
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td colspan="3" style="text-align: right;">Platform Commission</td>
+                    <td style="text-align: right; color: #000;">−${{ total_commission|floatformat:2 }}</td>
+                    <td></td>
+                </tr>
+                <tr style="background: #f5f5f5; font-weight: bold; border-top: 1px solid #999;">
+                    <td colspan="3" style="text-align: right;">Net Change</td>
+                    <td style="text-align: right; color: #000;">
+                        {% if net_change >= 0 %}+{% endif %}${{ net_change|floatformat:2 }}
+                    </td>
+                    <td></td>
+                </tr>
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td colspan="3" style="text-align: right;">Ending Balance</td>
+                    <td></td>
+                    <td style="text-align: right; color: #000;">${{ final_balance|floatformat:2 }}</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
     </div>
     
+    {% if final_balance != 0 %}
     <div class="tax-summary">
-        <h2>Tax Summary (for reference)</h2>
+        <h2>Tax Summary (Reference Only)</h2>
         <div class="date-range">({{ start_date|date:"M d, Y" }} – {{ end_date|date:"M d, Y" }})</div>
         
-        <div class="tax-toggle">
-            <label>
-                <input type="checkbox" id="showTaxDetails" onchange="toggleTaxDetails()">
-                Show tax details
-            </label>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
-            <div class="summary-item">
-                <div class="summary-label">GST Collected</div>
-                <div class="summary-value" style="color: #2d6a4f;">${{ total_gst|floatformat:2 }}</div>
+        <div style="margin-top: 20px;">
+            {% if tax_products_gst != 0 or tax_products_pst != 0 %}
+            <div style="margin-bottom: 15px;">
+                <h3 style="color: #2d6a4f; margin-bottom: 10px; font-size: 1.1rem;">Products</h3>
+                <div style="padding-left: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>GST:</span>
+                        <strong>${{ tax_products_gst|floatformat:2 }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>PST:</span>
+                        <strong>${{ tax_products_pst|floatformat:2 }}</strong>
+                    </div>
+                </div>
             </div>
-            <div class="summary-item">
-                <div class="summary-label">PST Collected</div>
-                <div class="summary-value" style="color: #2d6a4f;">${{ total_pst|floatformat:2 }}</div>
+            {% endif %}
+            
+            {% if tax_memberships_gst != 0 or tax_memberships_pst != 0 %}
+            <div style="margin-bottom: 15px;">
+                <h3 style="color: #2d6a4f; margin-bottom: 10px; font-size: 1.1rem;">Memberships</h3>
+                <div style="padding-left: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>GST:</span>
+                        <strong>${{ tax_memberships_gst|floatformat:2 }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span>PST:</span>
+                        <strong>${{ tax_memberships_pst|floatformat:2 }}</strong>
+                    </div>
+                </div>
             </div>
-            <div class="summary-item">
-                <div class="summary-label">Total Tax Collected</div>
-                <div class="summary-value" style="color: #2d6a4f;">${{ total_tax|floatformat:2 }}</div>
+            {% endif %}
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 2px solid #ddd;">
+                <h3 style="color: #2d6a4f; margin-bottom: 10px; font-size: 1.1rem;">Total Tax Collected</h3>
+                <div style="padding-left: 20px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>GST:</span>
+                        <strong>${{ total_gst|floatformat:2 }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>PST:</span>
+                        <strong>${{ total_pst|floatformat:2 }}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 1.1rem;">
+                        <strong>Total:</strong>
+                        <strong style="color: #2d6a4f;">${{ total_tax|floatformat:2 }}</strong>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -400,34 +412,8 @@
             <strong>Note:</strong> Taxes are collected on behalf of sellers.<br>
             Sellers are responsible for tax reporting and remittance.
         </div>
-        
-        <div class="tax-details" id="taxDetails">
-            <table class="tax-details-table">
-                <thead>
-                    <tr>
-                        <th>Order</th>
-                        <th style="text-align: right;">GST</th>
-                        <th style="text-align: right;">PST</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in transactions %}
-                        {% if t.type == 'order' and t.gst > 0 or t.pst > 0 %}
-                        <tr>
-                            <td><a href="{% url 'sellers:order_detail' t.order_id %}">#{{ t.order_id }}</a></td>
-                            <td style="text-align: right;">${{ t.gst|floatformat:2 }}</td>
-                            <td style="text-align: right;">${{ t.pst|floatformat:2 }}</td>
-                        </tr>
-                        {% endif %}
-                    {% empty %}
-                        <tr>
-                            <td colspan="3" style="text-align: center; color: #666;">No tax collected in this period.</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
     </div>
+    {% endif %}
     
     <div class="export-section">
         <a href="?period={{ period }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}&export=csv" class="btn-export">Export CSV</a>
@@ -445,14 +431,5 @@
     }
   }
   
-  function toggleTaxDetails() {
-    const checkbox = document.getElementById('showTaxDetails');
-    const details = document.getElementById('taxDetails');
-    if (checkbox.checked) {
-      details.classList.add('show');
-    } else {
-      details.classList.remove('show');
-    }
-  }
 </script>
 {% endblock %}

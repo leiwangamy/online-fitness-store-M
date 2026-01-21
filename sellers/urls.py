@@ -17,6 +17,7 @@ urlpatterns = [
     
     # Seller dashboard (approved sellers only)
     path("dashboard/", views.dashboard, name="dashboard"),
+    path("profile/", views.seller_profile, name="seller_profile"),
     
     # Product management (approved sellers only)
     path("products/", views.product_list, name="product_list"),

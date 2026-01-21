@@ -147,12 +147,12 @@
     {% if plans %}
     <div class="plans">
       {% for plan in plans %}
-        <div class="plan" {% if is_member and current_plan and current_plan.slug == plan.slug %}style="border: 2px solid #1b4332; background: #e8f5e9;"{% endif %}>
+        <div class="plan" {% if plan.slug in subscribed_plan_identifiers %}style="border: 2px solid #1b4332; background: #e8f5e9;"{% endif %}>
           <div class="plan-content">
             <h3>
               {{ plan.name }}
-              {% if is_member and current_plan and current_plan.slug == plan.slug %}
-                <span style="font-size: 0.7em; color: #1b4332; font-weight: normal;">(Current Plan)</span>
+              {% if plan.slug in subscribed_plan_identifiers %}
+                <span style="font-size: 0.7em; color: #1b4332; font-weight: normal;">(Subscribed)</span>
               {% endif %}
             </h3>
             <div class="plan-description">{{ plan.description|safe }}</div>
@@ -163,18 +163,10 @@
           <div class="plan-button-container">
             <p class="plan-price"><strong>{{ plan.price_display }}</strong></p>
             {% if user.is_authenticated %}
-              {% if is_member and current_plan and current_plan.slug == plan.slug %}
-                <a href="{% url 'members:manage_subscription' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
-                  Manage Plan
+              {% if plan.slug in subscribed_plan_identifiers %}
+                <a href="{% url 'members:my_platform_subscriptions' %}" class="btn btn-primary" style="text-decoration: none; display: inline-block;">
+                  Manage Subscription
                 </a>
-              {% elif is_member and current_plan %}
-                <form method="post" action="{% url 'members:membership_plans' %}" style="display: inline;">
-                  {% csrf_token %}
-                  <input type="hidden" name="plan_slug" value="{{ plan.slug }}">
-                  <button type="submit" name="subscribe_plan" class="btn btn-primary">
-                    Change to {{ plan.name }}
-                  </button>
-                </form>
               {% else %}
                 <form method="post" action="{% url 'members:membership_plans' %}" style="display: inline;">
                   {% csrf_token %}

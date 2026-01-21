@@ -156,16 +156,16 @@ admin.site.register(Seller, SellerAdmin)
 @admin.register(SellerMembershipPlan)
 class SellerMembershipPlanAdmin(admin.ModelAdmin):
     """Admin interface for managing seller membership plans"""
-    list_display = ('name', 'slug', 'seller_display', 'price_display', 'is_active', 'active_members_count', 'display_order', 'created_at')
-    list_filter = ('is_active', 'seller', 'created_at')
+    list_display = ('name', 'slug', 'seller_display', 'price_display', 'is_active', 'is_approved', 'active_members_count', 'display_order', 'created_at')
+    list_filter = ('is_active', 'is_approved', 'seller', 'created_at')
     search_fields = ('name', 'slug', 'description', 'seller__display_name', 'seller__user__email')
-    list_editable = ('is_active', 'display_order')
+    list_editable = ('is_active', 'is_approved', 'display_order')
     prepopulated_fields = {'slug': ('name',)}
     
     fieldsets = (
         ('Plan Information', {
-            'fields': ('seller', 'name', 'slug', 'price', 'is_active', 'display_order'),
-            'description': 'To remove a plan from the website, set "Is active" to False. Plans with active member subscriptions cannot be deleted.'
+            'fields': ('seller', 'name', 'slug', 'price', 'is_active', 'is_approved', 'display_order'),
+            'description': 'To remove a plan from the website, set "Is active" to False. Plans with active member subscriptions cannot be deleted. "Is approved" controls whether the plan appears publicly and in navigation.'
         }),
         ('Description', {
             'fields': ('description', 'details')

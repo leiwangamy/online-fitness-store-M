@@ -204,13 +204,15 @@
         <div class="thumbnail-row" id="thumbnail-row">
     {# Image thumbnails #}
     {% for image in product.images.all %}
-        <img
-            src="{{ image.image.url }}"
-            class="thumb slide-thumb"
-            data-type="image"
-            data-src="{{ image.image.url }}"
-            alt="{{ image.alt_text|default:product.name }}"
-        >
+        {% if image.image %}
+            <img
+                src="{{ image.image.url }}"
+                class="thumb slide-thumb"
+                data-type="image"
+                data-src="{{ image.image.url }}"
+                alt="{{ image.alt_text|default:product.name }}"
+            >
+        {% endif %}
     {% endfor %}
 
     {# Video thumbnails (file or URL) #}

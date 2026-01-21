@@ -139,6 +139,10 @@ class SellerMembershipPlan(models.Model):
         default=True,
         help_text="Only active plans are shown to customers"
     )
+    is_approved = models.BooleanField(
+        default=False,
+        help_text="Admin approval required. Only approved plans are shown publicly and in navigation."
+    )
     display_order = models.PositiveIntegerField(
         default=0,
         help_text="Order in which plans appear (lower numbers first)"

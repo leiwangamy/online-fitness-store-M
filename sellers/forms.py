@@ -261,3 +261,49 @@ class SellerProductForm(forms.ModelForm):
             cleaned["service_availability"] = ""
         
         return cleaned
+
+
+class SellerProfileForm(forms.ModelForm):
+    """
+    Form for sellers to update their profile information.
+    Allows updating display_name, business_name, business_description, and membership_intro_text.
+    """
+    class Meta:
+        model = Seller
+        fields = ['display_name', 'business_name', 'business_description', 'membership_intro_text']
+        widgets = {
+            'display_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Your display name (e.g., "John\'s Fitness Store")'
+            }),
+            'business_name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Optional: Your business name'
+            }),
+            'business_description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Optional: Tell us about your business or what you sell'
+            }),
+            'membership_intro_text': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Introduction text shown at the top of your membership plans page'
+            }),
+        }
+        labels = {
+            'display_name': 'Display Name',
+            'business_name': 'Business Name (Optional)',
+            'business_description': 'Business Description (Optional)',
+            'membership_intro_text': 'Membership Page Intro Text',
+        }
+        help_texts = {
+            'display_name': 'This name will be shown to customers on your products and membership plans.',
+            'business_name': 'If you have a registered business name.',
+            'business_description': 'Brief description of your business or products.',
+            'membership_intro_text': 'This text appears at the top of your public membership plans page.',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['display_name'].required = True
