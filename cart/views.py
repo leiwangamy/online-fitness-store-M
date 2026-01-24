@@ -161,12 +161,22 @@ def cart_detail(request):
     for item in items:
         subtotal += item["line_total"]
 
-    tax = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
-    total_with_tax = (subtotal + tax).quantize(Decimal("0.01"))
+    # Calculate GST (5%) on all items
+    gst = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
+    # Calculate PST (7%) only on items that charge PST
+    pst_subtotal = Decimal("0.00")
+    for item in items:
+        if getattr(item["product"], "charge_pst", False):
+            pst_subtotal += item["line_total"]
+    pst = (pst_subtotal * Decimal("0.07")).quantize(Decimal("0.01"))
+    tax = gst + pst
+    total_with_tax = (subtotal + gst + pst).quantize(Decimal("0.01"))
 
     context = {
         "items": items,
         "subtotal": subtotal,
+        "gst": gst,
+        "pst": pst,
         "tax": tax,
         "total_with_tax": total_with_tax,
     }

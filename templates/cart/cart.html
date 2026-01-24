@@ -135,7 +135,10 @@
 
     <div class="total-box">
         <p>Subtotal: <strong>${{ subtotal }}</strong></p>
-        <p>GST/HST (5%): <strong>${{ tax }}</strong></p>
+        <p>GST/HST (5%): <strong>${{ gst }}</strong></p>
+        {% if pst > 0 %}
+        <p>PST (7%): <strong>${{ pst }}</strong></p>
+        {% endif %}
         <p>Total with tax: <strong>${{ total_with_tax }}</strong></p>
     </div>
 
@@ -174,14 +177,13 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
+{% if company_settings.shipping_policy and not company_settings.pickup_only %}
 <p class="shipping-note" style="margin-top:10px; font-size:0.9rem; color:#555;">
     <em>
-        Shipping information:<br>
-        • Physical products – flat $15 shipping fee (free for orders over $100).<br>
-        • Digital and service products – no shipping charges.<br>
-        Final shipping will be calculated at checkout.
+        {{ company_settings.shipping_policy|linebreaks }}
     </em>
 </p>
+{% endif %}
 
 
 {% endblock %}

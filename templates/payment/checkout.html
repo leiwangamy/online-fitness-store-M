@@ -168,7 +168,10 @@
 
     <div class="totals">
       <p>Subtotal: <strong>${{ subtotal }}</strong></p>
-      <p>GST/HST (5%): <strong>${{ tax }}</strong></p>
+      <p>GST/HST (5%): <strong>${{ gst }}</strong></p>
+      {% if pst > 0 %}
+      <p>PST (7%): <strong>${{ pst }}</strong></p>
+      {% endif %}
       <p>Shipping: <strong>${{ shipping }}</strong> ({{ shipping_label }})</p>
       <p><strong>Total: ${{ total }}</strong></p>
     </div>
@@ -191,6 +194,7 @@
 
     <div class="checkout-container">
       <div class="checkout-options">
+      {% if not pickup_only %}
       <!-- Fulfillment Method Column -->
       <div class="fulfillment-method">
         <h3 style="margin-top: 0; margin-bottom: 10px;">Fulfillment Method</h3>
@@ -218,7 +222,7 @@
       </div>
 
       <!-- Shipping Address Column -->
-      <div class="shipping-address-box" id="shipping-section">
+      <div class="shipping-address-box" id="shipping-section" {% if pickup_only %}style="display: none;"{% endif %}>
         <h3 style="margin-top: 0; margin-bottom: 10px;">Shipping Address</h3>
         {% if default_address.address1 or default_address.city %}
           {# Check if address is complete - address1 or address2 must be filled #}
@@ -264,6 +268,18 @@
           </a>
         </div>
       </div>
+      {% else %}
+      <!-- Pickup Only Mode: Show pickup location selection only -->
+      <div class="fulfillment-method" style="grid-column: 1 / -1;">
+        <h3 style="margin-top: 0; margin-bottom: 10px;">Pickup Location</h3>
+        <p><strong>Your order will be available for pickup at the selected location.</strong></p>
+        {% if form.fulfillment_method %}
+          {{ form.fulfillment_method }}
+        {% else %}
+          <input type="hidden" name="fulfillment_method" value="pickup">
+        {% endif %}
+      </div>
+      {% endif %}
       </div> <!-- End checkout-options -->
 
     {# Show form fields with inline warnings only if there are errors - no error box #}
@@ -376,23 +392,38 @@
       <input type="hidden" name="country" value="{{ default_address.country|default:'Canada' }}">
     {% endif %}
 
-    <!-- Pickup Location Section - shown below when pickup is selected -->
-    <div class="pickup-section" id="pickup-section" style="display: none; margin-top: 20px; grid-column: 1 / -1;">
+    <!-- Pickup Location Section - shown below when pickup is selected or pickup_only is enabled -->
+    <div class="pickup-section" id="pickup-section" style="{% if pickup_only %}display: block;{% else %}display: none;{% endif %} margin-top: 20px; grid-column: 1 / -1;">
       <h3>Select Pickup Location</h3>
       {% if pickup_locations %}
         <p>
           <label for="id_pickup_location_id">Pickup Location:</label>
-          <select name="pickup_location_id" id="id_pickup_location_id" class="pickup-location-select">
+          <select name="pickup_location_id" id="id_pickup_location_id" class="pickup-location-select" {% if pickup_only %}required{% endif %}>
             <option value="">Select a pickup location</option>
             {% for location in pickup_locations %}
-              <option value="{{ location.id }}">{{ location.name }}</option>
+              <option value="{{ location.id }}" {% if pickup_only and forloop.first %}selected{% endif %}>{{ location.name }}</option>
             {% endfor %}
           </select>
           {% if form.pickup_location_id.errors %}<span style="color: #856404; font-size: 0.9em; display: block; margin-top: 5px;">⚠️ {{ form.pickup_location_id.errors.0 }}</span>{% endif %}
         </p>
-        <div id="pickup-location-details" style="display: none;" class="pickup-location-info"></div>
+        <div id="pickup-location-details" style="{% if pickup_only and pickup_locations %}display: block;{% else %}display: none;{% endif %}" class="pickup-location-info">
+          {% if pickup_only and pickup_locations %}
+            {% with first_location=pickup_locations|first %}
+              {% if first_location %}
+                <h4>{{ first_location.name }}</h4>
+                <p><strong>Address:</strong><br>
+                {{ first_location.address1 }}<br>
+                {% if first_location.address2 %}{{ first_location.address2 }}<br>{% endif %}
+                {{ first_location.city }}, {{ first_location.province }} {{ first_location.postal_code }}<br>
+                {{ first_location.country }}</p>
+                {% if first_location.phone %}<p><strong>Phone:</strong> {{ first_location.phone }}</p>{% endif %}
+                {% if first_location.instructions %}<p><strong>Instructions:</strong> {{ first_location.instructions }}</p>{% endif %}
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+        </div>
       {% else %}
-        <p style="color: #666; font-style: italic;">No pickup locations available at this time. Please select shipping instead.</p>
+        <p style="color: #666; font-style: italic;">No pickup locations available at this time.{% if not pickup_only %} Please select shipping instead.{% endif %}</p>
         <input type="hidden" name="pickup_location_id" id="id_pickup_location_id" value="">
       {% endif %}
     </div>
@@ -429,8 +460,11 @@
 
     <div class="totals">
       <p>Subtotal: <strong id="subtotal-display">${{ subtotal }}</strong></p>
-      <p>GST/HST (5%): <strong id="tax-display">${{ tax }}</strong></p>
-      <p>Shipping: <strong id="shipping-display">${{ shipping }}</strong> (<span id="shipping-label">{{ shipping_label }}</span>)</p>
+      <p>GST/HST (5%): <strong id="gst-display">${{ gst }}</strong></p>
+      {% if pst > 0 %}
+      <p>PST (7%): <strong id="pst-display">${{ pst }}</strong></p>
+      {% endif %}
+      <p>Shipping: <strong id="shipping-display">${{ shipping }}</strong>{% if not pickup_only %} (<span id="shipping-label">{{ shipping_label }}</span>){% endif %}</p>
       <p><strong>Total: <span id="total-display">${{ total }}</span></strong></p>
     </div>
     </div> <!-- End order-summary-section -->
@@ -469,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Pickup locations data for JavaScript
   const pickupLocations = {
     {% for location in pickup_locations %}
-    {{ location.id }}: {
+    "{{ location.id }}": {
       name: "{{ location.name|escapejs }}",
       address1: "{{ location.address1|escapejs }}",
       address2: "{{ location.address2|default:''|escapejs }}",
@@ -483,19 +517,38 @@ document.addEventListener('DOMContentLoaded', function() {
     {% endfor %}
   };
   
+  // Immediately update pickup details if in pickup_only mode and location is pre-selected
+  {% if pickup_only %}
+  if (pickupSelect && pickupDetails && Object.keys(pickupLocations).length > 0) {
+    // Check if location is pre-selected in template
+    if (pickupSelect.value) {
+      // Show the server-rendered details
+      pickupDetails.style.display = 'block';
+      // Also update via JavaScript in case user changes selection
+      updatePickupDetails();
+    } else if (pickupSelect.options.length > 1) {
+      // Select first location and update
+      pickupSelect.selectedIndex = 1;
+      updatePickupDetails();
+    }
+  }
+  {% endif %}
+  
   function updateShippingCost() {
     const selectedMethod = document.querySelector('input[name="fulfillment_method"]:checked');
     const subtotalEl = document.getElementById('subtotal-display');
-    const taxEl = document.getElementById('tax-display');
+    const gstEl = document.getElementById('gst-display');
+    const pstEl = document.getElementById('pst-display');
     const shippingEl = document.getElementById('shipping-display');
     const shippingLabelEl = document.getElementById('shipping-label');
     const totalEl = document.getElementById('total-display');
     
-    if (!subtotalEl || !taxEl || !shippingEl || !totalEl) return;
+    if (!subtotalEl || !gstEl || !shippingEl || !totalEl) return;
     
     // Extract numeric values from the original display
     const subtotal = parseFloat('{{ subtotal }}');
-    const tax = parseFloat('{{ tax }}');
+    const gst = parseFloat('{{ gst }}');
+    const pst = parseFloat('{{ pst|default:0 }}');
     const originalShipping = parseFloat('{{ shipping }}');
     const originalShippingLabel = '{{ shipping_label|escapejs }}';
     
@@ -508,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
       shippingLabel = 'No shipping (pickup order)';
     }
     
-    const total = subtotal + tax + shipping;
+    const total = subtotal + gst + pst + shipping;
     
     // Update display
     shippingEl.textContent = '$' + shipping.toFixed(2);
@@ -551,8 +604,9 @@ document.addEventListener('DOMContentLoaded', function() {
   function updatePickupDetails() {
     if (!pickupSelect || !pickupDetails) return;
     const selectedId = pickupSelect.value;
-    if (selectedId && pickupLocations[selectedId]) {
-      const loc = pickupLocations[selectedId];
+    // Try both string and number key lookup
+    const loc = pickupLocations[selectedId] || pickupLocations[parseInt(selectedId)];
+    if (selectedId && loc) {
       let html = '<h4>' + loc.name + '</h4>';
       html += '<p><strong>Address:</strong><br>';
       html += loc.address1;
@@ -568,20 +622,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
   
-  // Initial setup - set default to shipping if nothing is checked
+  // Initial setup - set default to shipping if nothing is checked (unless pickup_only is enabled)
+  {% if not pickup_only %}
   if (!document.querySelector('input[name="fulfillment_method"]:checked')) {
     const shippingRadio = document.getElementById('id_fulfillment_method_0');
     if (shippingRadio) shippingRadio.checked = true;
   }
   toggleFulfillmentSections();
+  {% else %}
+  // Pickup only mode - force pickup section visible and auto-select first location
+  if (pickupSection) pickupSection.style.display = 'block';
+  if (shippingSection) shippingSection.style.display = 'none';
+  // Force shipping to $0
+  updateShippingCost();
+  {% endif %}
   
-  // Listen for fulfillment method changes
+  // Listen for fulfillment method changes (only if not pickup_only)
+  {% if not pickup_only %}
   fulfillmentRadios.forEach(radio => {
     radio.addEventListener('change', function() {
       toggleFulfillmentSections();
       updateShippingCost();
     });
   });
+  {% endif %}
   
   // Listen for pickup location selection
   if (pickupSelect) {
@@ -595,10 +659,32 @@ document.addEventListener('DOMContentLoaded', function() {
         pickupSelect.style.border = '';
       }
     });
-    // Update on page load if a location is already selected
-    if (pickupSelect.value) {
-      updatePickupDetails();
-    }
+    // Update on page load if a location is already selected (for both normal and pickup_only mode)
+    // Use setTimeout to ensure DOM is fully ready and pickupLocations object is available
+    setTimeout(function() {
+      {% if pickup_only %}
+      // In pickup_only mode, ensure first location is selected and details shown
+      if (pickupSelect && pickupSelect.options.length > 1) {
+        // Check if a location is already selected (from template pre-selection)
+        let hasSelection = pickupSelect.value && pickupSelect.value !== '';
+        // If no value is selected, select the first location
+        if (!hasSelection) {
+          pickupSelect.selectedIndex = 1;
+        }
+        // Always update details - this will show the address for the selected location
+        updatePickupDetails();
+        // Force display if we have a selection
+        if (pickupDetails && pickupSelect.value) {
+          pickupDetails.style.display = 'block';
+        }
+      }
+      {% else %}
+      // Normal mode - update if location is already selected
+      if (pickupSelect && pickupSelect.value) {
+        updatePickupDetails();
+      }
+      {% endif %}
+    }, 100);
   }
   
   // Form validation before submission
@@ -612,6 +698,40 @@ document.addEventListener('DOMContentLoaded', function() {
       const selectedMethod = document.querySelector('input[name="fulfillment_method"]:checked');
       
       // Only validate pickup location if this is a physical product checkout (has fulfillment method)
+      // If pickup_only is enabled, skip shipping validation
+      {% if pickup_only %}
+      // Pickup only mode - only validate pickup location
+      const pickupSelectEl = document.getElementById('id_pickup_location_id');
+      const pickupSelectValue = pickupSelectEl ? pickupSelectEl.value : '';
+      
+      if (!pickupSelectValue || pickupSelectValue === '' || pickupSelectValue === '0') {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (pickupLocationError) {
+          pickupLocationError.style.display = 'block';
+          pickupLocationError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        if (pickupSelectEl) {
+          pickupSelectEl.style.border = '2px solid red';
+          pickupSelectEl.style.backgroundColor = '#ffe6e6';
+          pickupSelectEl.focus();
+          
+          pickupSelectEl.addEventListener('change', function() {
+            if (this.value && this.value !== '' && this.value !== '0') {
+              this.style.border = '';
+              this.style.backgroundColor = '';
+              if (pickupLocationError) {
+                pickupLocationError.style.display = 'none';
+              }
+            }
+          }, { once: true });
+        }
+        
+        return false;
+      }
+      {% else %}
       if (selectedMethod) {
         // Check if shipping is selected - validate address completeness
         if (selectedMethod.value === 'shipping') {
@@ -692,6 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
           }
         }
+        {% endif %}
       }
       
       // Hide error if validation passes

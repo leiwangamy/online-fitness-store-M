@@ -83,6 +83,7 @@ from cart.models import CartItem
 from orders.models import Order, OrderItem, PickupLocation
 from orders.services import create_downloads_and_email, send_order_confirmation_email
 from products.inventory import adjust_inventory, log_purchase
+from company_settings.models import CompanySettings
 
 
 TAX_RATE = Decimal("0.05")          # GST 5%
@@ -210,7 +211,15 @@ def checkout(request):
         )
 
     subtotal = subtotal.quantize(Decimal("0.01"))
-    tax = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
+    # Calculate GST (5%) on all items
+    gst = (subtotal * TAX_RATE).quantize(Decimal("0.01"))
+    # Calculate PST (7%) only on items that charge PST
+    pst_subtotal = Decimal("0.00")
+    for i in items:
+        if getattr(i["product"], "charge_pst", False):
+            pst_subtotal += i["line_total"]
+    pst = (pst_subtotal * Decimal("0.07")).quantize(Decimal("0.01"))
+    tax = gst + pst  # Total tax = GST + PST
     
     # Check if there are any physical products (not digital, not service)
     # If cart contains only digital products OR service products (or both), skip shipping/pickup
@@ -224,7 +233,7 @@ def checkout(request):
         # Digital/service only - no shipping needed, no address required
         shipping = Decimal("0.00")
         shipping_label = "No shipping (digital / service only)"
-        total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+        total = (subtotal + gst + pst + shipping).quantize(Decimal("0.01"))
         
         # For POST requests, create order directly
         if request.method == "POST":
@@ -239,7 +248,7 @@ def checkout(request):
                     user=request.user,
                     status=Order.STATUS_PENDING,  # Create as "pending" initially
                     subtotal=subtotal,
-                    tax=tax,
+                    tax=tax,  # tax = gst + pst
                     shipping=shipping,
                     total=total,
                     is_pickup=False,
@@ -385,29 +394,43 @@ def checkout(request):
             {
                 "empty": False,
                 "items": items,
-                "subtotal": subtotal,
-                "tax": tax,
-                "shipping": shipping,
-                "shipping_label": shipping_label,
-                "total": total,
-                "insufficient_items": insufficient_items,
-                "digital_only": True,  # Flag to hide shipping/pickup form in template (applies to digital AND service products)
-            },
-        )
+                    "subtotal": subtotal,
+                    "gst": gst,
+                    "pst": pst,
+                    "tax": tax,
+                    "shipping": shipping,
+                    "shipping_label": shipping_label,
+                    "total": total,
+                    "insufficient_items": insufficient_items,
+                    "digital_only": True,  # Flag to hide shipping/pickup form in template (applies to digital AND service products)
+                },
+            )
     
     # Physical products present - show shipping/pickup form
+    # Check if pickup-only mode is enabled
+    try:
+        company_settings = CompanySettings.get_settings()
+        pickup_only = company_settings.pickup_only
+    except Exception:
+        pickup_only = False
+    
     # Get pickup locations for template
     try:
         pickup_locations = PickupLocation.objects.filter(is_active=True).order_by('display_order', 'name')
+        # If pickup_only is enabled, only show the first pickup location
+        if pickup_only and pickup_locations.exists():
+            pickup_locations = pickup_locations[:1]
     except Exception as e:
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting pickup locations: {e}")
         pickup_locations = PickupLocation.objects.none()  # Empty queryset
     
-    # For GET request, calculate shipping with default (not pickup)
-    shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=False)
-    total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+    # For GET request, calculate shipping
+    # If pickup_only is enabled, force pickup mode (shipping = $0)
+    is_pickup_mode = pickup_only
+    shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=is_pickup_mode)
+    total = (subtotal + gst + pst + shipping).quantize(Decimal("0.01"))
 
     initial = _profile_initial(request.user)
 
@@ -418,18 +441,22 @@ def checkout(request):
             return redirect("payment:checkout")
 
         try:
-            form = ShippingAddressForm(request.POST, pickup_locations=pickup_locations)
+            form = ShippingAddressForm(request.POST, pickup_locations=pickup_locations, pickup_only=pickup_only)
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
             logger.error(f"Error creating ShippingAddressForm with POST data: {e}")
-            form = ShippingAddressForm(request.POST)
+            form = ShippingAddressForm(request.POST, pickup_only=pickup_only)
         
         if not form.is_valid():
             # Recalculate shipping based on form data (even if invalid, to show correct preview)
-            is_pickup = form.data.get("fulfillment_method") == "pickup"
+            # If pickup_only is enabled, force pickup mode
+            if pickup_only:
+                is_pickup = True
+            else:
+                is_pickup = form.data.get("fulfillment_method") == "pickup"
             shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=is_pickup)
-            total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+            total = (subtotal + gst + pst + shipping).quantize(Decimal("0.01"))
             
             # Convert queryset to list for template
             pickup_locations_list = list(pickup_locations) if pickup_locations else []
@@ -453,6 +480,8 @@ def checkout(request):
                     "empty": False,
                     "items": items,
                     "subtotal": subtotal,
+                    "gst": gst,
+                    "pst": pst,
                     "tax": tax,
                     "shipping": shipping,
                     "shipping_label": shipping_label,
@@ -462,41 +491,51 @@ def checkout(request):
                     "pickup_locations": pickup_locations_list,
                     "default_address": initial,
                     "profile": profile,
+                    "pickup_only": pickup_only,
                 },
             )
 
         form_data = form.cleaned_data
         
         # Get fulfillment_method from cleaned_data, fallback to raw POST data if not available
-        fulfillment_method = form_data.get("fulfillment_method") or request.POST.get("fulfillment_method", "shipping")
-        is_pickup = fulfillment_method == "pickup"
+        # If pickup_only is enabled, force pickup mode
+        if pickup_only:
+            fulfillment_method = "pickup"
+            is_pickup = True
+        else:
+            fulfillment_method = form_data.get("fulfillment_method") or request.POST.get("fulfillment_method", "shipping")
+            is_pickup = fulfillment_method == "pickup"
         
         # Get pickup_location_id from cleaned_data or raw POST data
         pickup_location = None
         if is_pickup:
-            pickup_location_id = form_data.get("pickup_location_id")
-            if not pickup_location_id:
-                # Fallback to raw POST data and convert to int
-                pickup_location_id_str = request.POST.get("pickup_location_id", "").strip()
-                if pickup_location_id_str:
+            # If pickup_only is enabled, automatically select the first pickup location
+            if pickup_only and pickup_locations.exists():
+                pickup_location = pickup_locations.first()
+            else:
+                pickup_location_id = form_data.get("pickup_location_id")
+                if not pickup_location_id:
+                    # Fallback to raw POST data and convert to int
+                    pickup_location_id_str = request.POST.get("pickup_location_id", "").strip()
+                    if pickup_location_id_str:
+                        try:
+                            pickup_location_id = int(pickup_location_id_str)
+                        except (ValueError, TypeError):
+                            pickup_location_id = None
+                
+                if pickup_location_id:
                     try:
-                        pickup_location_id = int(pickup_location_id_str)
-                    except (ValueError, TypeError):
-                        pickup_location_id = None
-            
-            if pickup_location_id:
-                try:
-                    pickup_location = PickupLocation.objects.get(pk=pickup_location_id, is_active=True)
-                except (PickupLocation.DoesNotExist, ValueError, TypeError):
-                    pickup_location = None
-                    # Log error for debugging
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.warning(f"Pickup location {pickup_location_id} not found or inactive for order")
+                        pickup_location = PickupLocation.objects.get(pk=pickup_location_id, is_active=True)
+                    except (PickupLocation.DoesNotExist, ValueError, TypeError):
+                        pickup_location = None
+                        # Log error for debugging
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.warning(f"Pickup location {pickup_location_id} not found or inactive for order")
         
         # Recalculate shipping based on pickup selection
         shipping, shipping_label = _calc_shipping(items, subtotal, is_pickup=is_pickup)
-        total = (subtotal + tax + shipping).quantize(Decimal("0.01"))
+        total = (subtotal + gst + pst + shipping).quantize(Decimal("0.01"))
         
         # Prepare shipping data - if pickup, use pickup location address
         if is_pickup and pickup_location:
@@ -724,18 +763,18 @@ def checkout(request):
     
     # Create form with pickup locations - use initial data, no validation errors on GET
     try:
-        form = ShippingAddressForm(initial=initial, pickup_locations=pickup_locations)
+        form = ShippingAddressForm(initial=initial, pickup_locations=pickup_locations, pickup_only=pickup_only)
     except Exception as e:
         # Fallback if form creation fails
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error creating ShippingAddressForm: {e}")
         try:
-            form = ShippingAddressForm(initial=initial)
+            form = ShippingAddressForm(initial=initial, pickup_only=pickup_only)
         except Exception as e2:
             logger.error(f"Error creating ShippingAddressForm without pickup_locations: {e2}")
             # Last resort - create form with minimal data
-            form = ShippingAddressForm()
+            form = ShippingAddressForm(pickup_only=pickup_only)
     
     # Convert queryset to list for template (safer for iteration)
     try:
@@ -753,6 +792,8 @@ def checkout(request):
             "empty": False,
             "items": items,
             "subtotal": subtotal,
+            "gst": gst,
+            "pst": pst,
             "tax": tax,
             "shipping": shipping,
             "shipping_label": shipping_label,
@@ -762,6 +803,7 @@ def checkout(request):
             "profile": profile,  # Pass profile to display default address
             "default_address": initial,  # Pass initial values for display
             "pickup_locations": pickup_locations_list,  # Pass pickup locations as list for template
+            "pickup_only": pickup_only,  # Pass pickup_only flag to template
         },
     )
 

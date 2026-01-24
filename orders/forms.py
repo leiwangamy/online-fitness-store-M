@@ -109,7 +109,19 @@ class ShippingAddressForm(forms.Form):
     def __init__(self, *args, **kwargs):
         # Extract pickup_locations if provided (for performance - avoid duplicate query)
         pickup_locations = kwargs.pop('pickup_locations', None)
+        # Extract pickup_only flag
+        self.pickup_only = kwargs.pop('pickup_only', False)
         super().__init__(*args, **kwargs)
+        
+        # If pickup_only is enabled, hide fulfillment_method field and auto-set to pickup
+        if self.pickup_only:
+            # Hide the fulfillment method field
+            self.fields['fulfillment_method'].widget = forms.HiddenInput()
+            # Set initial value to pickup
+            self.fields['fulfillment_method'].initial = "pickup"
+            # Make pickup location required
+            self.fields['pickup_location_id'].required = True
+        
         # Update queryset to get current active pickup locations
         try:
             if pickup_locations is not None:
@@ -155,6 +167,19 @@ class ShippingAddressForm(forms.Form):
         fulfillment_method = cleaned_data.get("fulfillment_method")
         pickup_location_id = cleaned_data.get("pickup_location_id")
         
+        # If pickup_only is enabled, force pickup mode and skip shipping validation
+        if self.pickup_only:
+            fulfillment_method = "pickup"
+            cleaned_data["fulfillment_method"] = "pickup"
+            # Require pickup location
+            if not pickup_location_id:
+                raise forms.ValidationError({
+                    "pickup_location_id": "Please select a pickup location."
+                })
+            # Skip all shipping address validation
+            return cleaned_data
+        
+        # Normal validation flow
         # If pickup is selected, require pickup location
         if fulfillment_method == "pickup":
             if not pickup_location_id:
