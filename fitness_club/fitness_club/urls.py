@@ -69,6 +69,9 @@ urlpatterns = [
     
     # API endpoints - centralized in api app
     path("api/", include("api.urls")),
+    
+    # dashboard app (analytics - publicly accessible for portfolio)
+    path("dashboard/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
 ]
 
 # Serve media files (in production, consider using nginx or a CDN)

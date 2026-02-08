@@ -117,6 +117,8 @@ INSTALLED_APPS = [
     "api",  # API app - central hub for all API endpoints
     "profiles.apps.ProfilesConfig",
     "sellers.apps.SellersConfig",
+    "company_settings",  # Company branding and site settings
+    "dashboard",  # Analytics dashboard
 
 ]
 
@@ -164,6 +166,7 @@ TEMPLATES = [
                 "orders.context_processors.staff_notifications",  # Staff notifications (refund requests)
                 "core.context_processors.admin_settings",  # Admin settings (membership visibility toggle)
                 "core.context_processors.membership_availability",  # Membership availability (for navigation)
+                "company_settings.context_processors.company_settings",  # Company branding and hero content
             ],
         },
     },
