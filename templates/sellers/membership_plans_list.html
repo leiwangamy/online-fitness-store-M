@@ -5,14 +5,25 @@
 
 {% block content %}
 <div class="container">
-    <h1>My Membership Plans</h1>
+    {% if is_read_only %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <strong>🔒 Read-Only Mode:</strong> You are viewing this seller's membership plans as an administrator. All edit functions are disabled.
+    </div>
+    {% endif %}
+    <h1>{% if is_read_only %}Seller Membership Plans (Read-Only){% else %}My Membership Plans{% endif %}</h1>
     
     <div style="margin: 20px 0;">
-        <a href="{% url 'sellers:membership_plan_add' %}" class="btn btn-primary">Add New Plan</a>
-        <a href="{% url 'sellers:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        {% if not is_read_only %}
+            <a href="{% url 'sellers:membership_plan_add' %}" class="btn btn-primary">Add New Plan</a>
+        {% endif %}
+        <a href="{% url 'sellers:dashboard' %}{% if is_read_only %}?seller_id={{ seller.id }}{% endif %}" class="btn btn-secondary">Back to Dashboard</a>
+        {% if is_read_only %}
+            <a href="{% url 'admin:sellers_seller_change' seller.id %}" class="btn btn-secondary" style="background: #6c757d; margin-left: 10px;">← Back to Admin</a>
+        {% endif %}
     </div>
     
     <!-- Membership Page Settings -->
+    {% if not is_read_only %}
     <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0;">
         <h2 style="margin-top: 0; color: #2d6a4f;">Membership Page Settings</h2>
         <form method="post" style="margin-top: 15px;">
@@ -25,6 +36,17 @@
             <button type="submit" name="update_intro" class="btn btn-primary">Save Intro Text</button>
         </form>
     </div>
+    {% else %}
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0;">
+        <h2 style="margin-top: 0; color: #2d6a4f;">Membership Page Settings</h2>
+        <div style="margin-top: 15px;">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Introduction Text</label>
+                <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; min-height: 60px;">{{ seller.membership_intro_text|default:"Choose a seller membership plan that fits your needs." }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
     
     {% if plans %}
         <div style="margin: 20px 0;">
@@ -61,6 +83,7 @@
                             </td>
                             <td style="padding: 12px; border: 1px solid #ddd;">{{ plan.display_order }}</td>
                             <td style="padding: 12px; border: 1px solid #ddd;">
+                                {% if not is_read_only %}
                                 <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                                     <a href="{% url 'sellers:membership_plan_edit' plan.id %}" class="btn btn-sm btn-primary" style="padding: 5px 10px; font-size: 0.85em;">Edit</a>
                                     <form method="post" action="{% url 'sellers:membership_plan_toggle_active' plan.id %}" style="display: inline;">
@@ -71,6 +94,9 @@
                                     </form>
                                     <a href="{% url 'sellers:membership_plan_delete' plan.id %}" class="btn btn-sm btn-danger" style="padding: 5px 10px; font-size: 0.85em;">Delete</a>
                                 </div>
+                                {% else %}
+                                <span style="color: #666; font-style: italic;">Read-only</span>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}

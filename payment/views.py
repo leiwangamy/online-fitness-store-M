@@ -81,7 +81,7 @@ except Exception:
 
 from cart.models import CartItem
 from orders.models import Order, OrderItem, PickupLocation
-from orders.services import create_downloads_and_email, send_order_confirmation_email
+from orders.services import create_downloads_and_email, send_new_order_alert_emails, send_order_confirmation_email
 from products.inventory import adjust_inventory, log_purchase
 from company_settings.models import CompanySettings
 
@@ -374,7 +374,8 @@ def checkout(request):
                     
                     # Send order confirmation email (only after payment confirmed)
                     send_order_confirmation_email(request, order)
-                    
+                    # Alert company + sellers (new order / product sold)
+                    send_new_order_alert_emails(request, order)
                     # Create digital downloads and send email (if there are digital products)
                     create_downloads_and_email(request, order)
                     
@@ -727,7 +728,8 @@ def checkout(request):
                 
                 # Send order confirmation email (only after payment confirmed)
                 send_order_confirmation_email(request, order)
-                
+                # Alert company + sellers (new order / product sold)
+                send_new_order_alert_emails(request, order)
                 # Create DigitalDownload rows + send email (if there are digital products)
                 # (your service already uses get_or_create so it's safe)
                 create_downloads_and_email(request, order, days_valid=7, max_downloads=0)

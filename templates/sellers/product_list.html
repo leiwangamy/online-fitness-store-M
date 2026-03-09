@@ -5,11 +5,21 @@
 
 {% block content %}
 <div class="container">
-    <h1>My Products</h1>
+    {% if is_read_only %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <strong>🔒 Read-Only Mode:</strong> You are viewing this seller's products as an administrator. All edit functions are disabled.
+    </div>
+    {% endif %}
+    <h1>{% if is_read_only %}Seller Products (Read-Only){% else %}My Products{% endif %}</h1>
     
     <div class="product-actions">
-        <a href="{% url 'sellers:product_add' %}" class="btn btn-primary">Add New Product</a>
-        <a href="{% url 'sellers:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+        {% if not is_read_only %}
+            <a href="{% url 'sellers:product_add' %}" class="btn btn-primary">Add New Product</a>
+        {% endif %}
+        <a href="{% url 'sellers:dashboard' %}{% if is_read_only %}?seller_id={{ seller.id }}{% endif %}" class="btn btn-secondary">Back to Dashboard</a>
+        {% if is_read_only %}
+            <a href="{% url 'admin:sellers_seller_change' seller.id %}" class="btn btn-secondary" style="background: #6c757d;">← Back to Admin</a>
+        {% endif %}
     </div>
     
     <form method="get" class="search-form">
@@ -35,8 +45,10 @@
                         </span>
                     </p>
                     <div class="product-actions">
-                        <a href="{% url 'sellers:product_edit' product.id %}" class="btn btn-sm btn-primary">Edit</a>
-                        <a href="{% url 'sellers:product_delete' product.id %}" class="btn btn-sm btn-danger">Delete</a>
+                        {% if not is_read_only %}
+                            <a href="{% url 'sellers:product_edit' product.id %}" class="btn btn-sm btn-primary">Edit</a>
+                            <a href="{% url 'sellers:product_delete' product.id %}" class="btn btn-sm btn-danger">Delete</a>
+                        {% endif %}
                         <a href="{% url 'products:detail' product.id %}" class="btn btn-sm btn-secondary">View</a>
                     </div>
                 </div>
@@ -55,7 +67,7 @@
             </div>
         {% endif %}
     {% else %}
-        <p>No products found. <a href="{% url 'sellers:product_add' %}">Add your first product</a>!</p>
+        <p>No products found.{% if not is_read_only %} <a href="{% url 'sellers:product_add' %}">Add your first product</a>!{% endif %}</p>
     {% endif %}
 </div>
 

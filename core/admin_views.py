@@ -4,6 +4,7 @@ Admin views for custom admin panel actions
 import os
 import sys
 import subprocess
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -72,29 +73,39 @@ def backup_database(request):
         DB_HOST = db_config.get('HOST', 'localhost')
         DB_PORT = db_config.get('PORT', '5432')
         
-        # Try to find pg_dump in common locations
+        # Try to find pg_dump (required for PostgreSQL backup)
         PG_DUMP_PATH = os.getenv('PG_DUMP_PATH', None)
         if not PG_DUMP_PATH:
-            # Common PostgreSQL installation paths
+            # Windows paths, then Linux/Docker path, then PATH
             possible_paths = [
                 r"C:\Program Files\PostgreSQL\16\bin\pg_dump.exe",
                 r"C:\Program Files\PostgreSQL\15\bin\pg_dump.exe",
                 r"C:\Program Files\PostgreSQL\14\bin\pg_dump.exe",
                 r"C:\Program Files\PostgreSQL\13\bin\pg_dump.exe",
+                "/usr/bin/pg_dump",  # Linux/Docker (postgresql-client)
                 "pg_dump",  # If in PATH
             ]
             for path in possible_paths:
-                if path == "pg_dump" or os.path.exists(path):
+                if path == "pg_dump":
+                    found = shutil.which("pg_dump")
+                    if found:
+                        PG_DUMP_PATH = found
+                        break
+                elif os.path.exists(path):
                     PG_DUMP_PATH = path
                     break
         
         if not PG_DUMP_PATH:
-            messages.error(request, "pg_dump not found. Please set PG_DUMP_PATH environment variable.")
+            messages.error(request, "pg_dump not found. Install PostgreSQL client tools or set PG_DUMP_PATH.")
             return redirect("admin:index")
         
-        # Create backup directory
+        # Backup directory: env BACKUP_DIR, or project_root/backups
         project_root = Path(settings.BASE_DIR)
-        BACKUP_DIR = project_root / "backups"
+        backup_dir_env = os.getenv("BACKUP_DIR", "").strip() or os.getenv("DJANGO_BACKUP_DIR", "").strip()
+        if backup_dir_env:
+            BACKUP_DIR = Path(backup_dir_env)
+        else:
+            BACKUP_DIR = project_root / "backups"
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
         
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Contact Us – Fitness Club{% endblock %}
+{% block title %}Contact Us – {{ company_settings.company_name|default:"Fitness Club" }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -68,42 +68,35 @@
   <h1>Contact Us</h1>
   
   <div class="contact-info">
+    {% if company_settings.phone_number %}
     <div class="contact-item">
       <h2>
         <span class="icon">📞</span>
         Phone
       </h2>
-      <p><a href="tel:{{ company_info.phone }}">{{ company_info.phone }}</a></p>
+      <p><a href="tel:{{ company_settings.phone_number }}">{{ company_settings.phone_number }}</a></p>
     </div>
+    {% endif %}
 
+    {% if company_settings.support_email %}
     <div class="contact-item">
       <h2>
         <span class="icon">📧</span>
         Email
       </h2>
-      <p><a href="mailto:{{ company_info.email }}">{{ company_info.email }}</a></p>
+      <p><a href="mailto:{{ company_settings.support_email }}">{{ company_settings.support_email }}</a></p>
     </div>
+    {% endif %}
 
-    {% if company_info.address %}
+    {% if company_settings.address %}
     <div class="contact-item">
       <h2>
         <span class="icon">📍</span>
         Address
       </h2>
-      <p style="white-space: pre-line;">{{ company_info.address }}</p>
-    </div>
-    {% endif %}
-
-    {% if company_info.description %}
-    <div class="contact-item">
-      <h2>
-        <span class="icon">ℹ️</span>
-        About Us
-      </h2>
-      <p style="white-space: pre-line;">{{ company_info.description }}</p>
+      <p style="white-space: pre-line;">{{ company_settings.address }}</p>
     </div>
     {% endif %}
   </div>
 </div>
 {% endblock %}
-

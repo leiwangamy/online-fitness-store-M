@@ -17,7 +17,7 @@ from django.http import HttpResponse, JsonResponse
 
 from .models import Seller, SellerMembershipPlan
 from .forms import SellerApplicationForm, SellerProductForm, SellerProfileForm
-from .decorators import seller_required
+from .decorators import seller_required, admin_or_seller_required
 from products.models import Product
 from orders.models import OrderItem, Order, Refund
 
@@ -159,12 +159,18 @@ def application_status(request):
     })
 
 
-@seller_required
+@admin_or_seller_required
 def dashboard(request):
     """
     Seller dashboard showing overview stats.
+    Supports admin read-only access via seller_id parameter.
     """
-    seller = request.user.seller
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     
     # Get seller's products
     products = Product.objects.filter(seller=seller)
@@ -226,17 +232,24 @@ def dashboard(request):
         'next_payout_date': next_payout_date,
         'recent_orders': recent_orders,
         'low_stock_products': low_stock_products,
+        'is_read_only': is_read_only,
     }
     
     return render(request, 'sellers/dashboard.html', context)
 
 
-@seller_required
+@admin_or_seller_required
 def product_list(request):
     """
     List all products belonging to the seller.
+    Supports admin read-only access via seller_id parameter.
     """
-    seller = request.user.seller
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     products = Product.objects.filter(seller=seller).select_related('category').order_by('-id')
     
     # Search functionality
@@ -263,6 +276,8 @@ def product_list(request):
         'page_obj': page_obj,
         'search_query': search_query,
         'status_filter': status_filter,
+        'is_read_only': is_read_only,
+        'seller': seller,
     })
 
 
@@ -428,12 +443,18 @@ def product_delete(request, product_id):
     })
 
 
-@seller_required
+@admin_or_seller_required
 def order_list(request):
     """
     List all orders containing seller's products.
+    Supports admin read-only access via seller_id parameter.
     """
-    seller = request.user.seller
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     
     # Get all orders that contain this seller's products
     order_items = OrderItem.objects.filter(seller=seller).select_related('order', 'order__user', 'product')
@@ -457,15 +478,22 @@ def order_list(request):
         'page_obj': page_obj,
         'status_filter': status_filter,
         'status_choices': Order.STATUS_CHOICES,
+        'is_read_only': is_read_only,
     })
 
 
-@seller_required
+@admin_or_seller_required
 def order_detail(request, order_id):
     """
     View order details with shipping address and allow status updates.
+    Supports admin read-only access.
     """
-    seller = request.user.seller
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     
     # Get order and verify it contains seller's products
     order = get_object_or_404(Order, id=order_id)
@@ -473,7 +501,10 @@ def order_detail(request, order_id):
     
     if not order_items.exists():
         messages.error(request, "You don't have permission to view this order.")
-        return redirect('sellers:order_list')
+        redirect_url = reverse('sellers:order_list')
+        if is_read_only:
+            redirect_url += f'?seller_id={seller.id}'
+        return redirect(redirect_url)
     
     # Get all items in this order (seller's items only)
     seller_items = order_items.select_related('product')
@@ -483,8 +514,8 @@ def order_detail(request, order_id):
     seller_earnings = sum(item.seller_earnings for item in seller_items)
     seller_platform_fees = sum(item.platform_fee for item in seller_items)
     
-    # Handle status update
-    if request.method == 'POST':
+    # Handle status update (only if not in read-only mode)
+    if request.method == 'POST' and not is_read_only:
         new_status = request.POST.get('status')
         tracking_number = request.POST.get('tracking_number', '').strip()
         shipping_carrier = request.POST.get('shipping_carrier', '').strip()
@@ -505,7 +536,16 @@ def order_detail(request, order_id):
         else:
             messages.error(request, "Invalid status selected.")
         
-        return redirect('sellers:order_detail', order_id=order.id)
+        # Preserve seller_id in redirect if in read-only mode
+        redirect_url = reverse('sellers:order_detail', args=[order.id])
+        if is_read_only:
+            redirect_url += f'?seller_id={seller.id}'
+        return redirect(redirect_url)
+    elif request.method == 'POST' and is_read_only:
+        messages.warning(request, "You are in read-only mode. Changes are not allowed.")
+        redirect_url = reverse('sellers:order_detail', args=[order.id])
+        redirect_url += f'?seller_id={seller.id}'
+        return redirect(redirect_url)
     
     # Import refund policy functions
     from services.refund_policy import is_within_refund_window, can_seller_auto_refund
@@ -559,6 +599,7 @@ def order_detail(request, order_id):
         'seller_refunds': seller_refunds,
         'status_choices': Order.STATUS_CHOICES,
         'carrier_choices': Order.CARRIER_CHOICES,
+        'is_read_only': is_read_only,
     })
 
 
@@ -674,16 +715,22 @@ def refund_order_item(request, order_item_id):
         return JsonResponse({"ok": False, "error": str(e)}, status=500)
 
 
-@seller_required
+@admin_or_seller_required
 def earnings_statement(request):
     """
     View earnings statement with detailed breakdown, date filtering, and transaction log.
+    Supports admin read-only access.
     """
     from datetime import datetime, date
     import csv
     from django.http import HttpResponse
     
-    seller = request.user.seller
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     now = timezone.now()
     today = now.date()
     
@@ -937,6 +984,7 @@ def earnings_statement(request):
         'total_gst': total_gst,
         'total_pst': total_pst,
         'total_tax': total_tax,
+        'is_read_only': is_read_only,
     }
     
     return render(request, 'sellers/earnings_statement.html', context)
@@ -1796,10 +1844,15 @@ def export_statement_pdf(seller, start_date, end_date):
     return response
 
 
-@seller_required
+@admin_or_seller_required
 def membership_plans_list(request):
-    """List all membership plans for the seller"""
-    seller = request.user.seller
+    """List all membership plans for the seller. Supports admin read-only access."""
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     plans = SellerMembershipPlan.objects.filter(seller=seller).order_by('display_order', 'name')
     
     # Handle intro text update
@@ -1813,6 +1866,7 @@ def membership_plans_list(request):
     return render(request, 'sellers/membership_plans_list.html', {
         'plans': plans,
         'seller': seller,
+        'is_read_only': is_read_only,
     })
 
 
@@ -1987,10 +2041,15 @@ def membership_plan_toggle_active(request, plan_id):
     return redirect('sellers:membership_plans_list')
 
 
-@seller_required
+@admin_or_seller_required
 def seller_profile(request):
-    """Seller profile page - allows sellers to update their profile information"""
-    seller = request.user.seller
+    """Seller profile page - allows sellers to update their profile information. Supports admin read-only access."""
+    # Use hasattr to avoid evaluating request.user.seller if viewed_seller exists
+    if hasattr(request, 'viewed_seller'):
+        seller = request.viewed_seller
+    else:
+        seller = request.user.seller
+    is_read_only = getattr(request, 'is_read_only', False)
     
     if request.method == 'POST':
         form = SellerProfileForm(request.POST, instance=seller)
@@ -2004,4 +2063,5 @@ def seller_profile(request):
     return render(request, 'sellers/seller_profile.html', {
         'seller': seller,
         'form': form,
+        'is_read_only': is_read_only,
     })

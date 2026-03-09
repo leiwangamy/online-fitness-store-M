@@ -6,7 +6,15 @@ from django.core.validators import MinValueValidator
 
 class CompanyInfo(models.Model):
     """
-    Stores company contact information that can be edited by admin
+    DEPRECATED: This model is maintained for backward compatibility only.
+    
+    Please use CompanySettings (company_settings app) instead for all
+    company contact information and branding.
+    
+    To update company info, go to:
+    Django Admin → Company Settings
+    
+    This model stores company contact information that can be edited by admin
     and displayed to users on the contact page.
     """
     phone = models.CharField(max_length=20, default="778-238-3371")

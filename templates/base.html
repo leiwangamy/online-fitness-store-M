@@ -4,7 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Fitness Club{% endblock %}</title>
+  <title>{% block title %}{{ company_settings.company_name|default:"Fitness Club" }}{% endblock %}</title>
+  
+  <!-- Favicon -->
+  {% if company_settings.favicon %}
+    <link rel="icon" type="image/x-icon" href="{{ company_settings.favicon.url }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ company_settings.favicon.url }}">
+  {% endif %}
 
   {% block extra_css %}{% endblock %}
 
@@ -430,16 +436,29 @@
 
   <div class="container">
     <nav class="top-nav">
+      <!-- Company Logo/Name -->
+      <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+        {% if company_settings.logo %}
+          <a href="{% url 'home:home' %}" style="display: flex; align-items: center;">
+            <img src="{{ company_settings.logo.url }}" alt="{{ company_settings.company_name }}" style="max-height: 50px; max-width: 200px; object-fit: contain;">
+          </a>
+        {% endif %}
+        <a href="{% url 'home:home' %}" style="font-size: 1.5rem; font-weight: bold; color: #2d6a4f; text-decoration: none;">
+          {{ company_settings.company_name|default:"Fitness Store" }}
+        </a>
+        {% if company_settings.tagline %}
+          <span style="color: #666; font-size: 0.9rem; margin-left: 10px;">{{ company_settings.tagline }}</span>
+        {% endif %}
+      </div>
+      
       <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle menu" type="button" onclick="toggleMobileMenu(event)">☰ Menu</button>
       <div class="nav-links" id="navLinks">
         <a href="{% url 'home:home' %}">Home</a>
         <a href="{% url 'products:list' %}">Products</a>
         {% if admin_settings.show_platform_membership %}
-          {% if has_platform_membership %}
             <a href="{% url 'members:membership_plans' %}">Membership</a>
-          {% endif %}
         {% endif %}
-        {% if admin_settings.show_seller_membership and has_seller_membership %}
+        {% if admin_settings.show_seller_membership %}
           {% regroup seller_plans by seller as plans_by_seller %}
           {% if plans_by_seller|length == 1 %}
             <a href="{% url 'members:seller_membership_plans' %}">{{ plans_by_seller.0.grouper.display_name|default:plans_by_seller.0.grouper.user.username }} Membership</a>
@@ -584,7 +603,12 @@
           </ul>
         </div>
         <div style="text-align: center; color: #666; font-size: 12px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee;">
-          <p style="margin: 0;">&copy; {% now "Y" %} Fitness Club. All rights reserved.</p>
+          <p style="margin: 0;">&copy; {% now "Y" %} {{ company_settings.company_name|default:"Fitness Club" }}. All rights reserved.</p>
+          {% if company_settings.support_email %}
+            <p style="margin: 5px 0 0 0;">
+              Contact: <a href="mailto:{{ company_settings.support_email }}" style="color: #0066cc;">{{ company_settings.support_email }}</a>
+            </p>
+          {% endif %}
         </div>
       </div>
     </footer>

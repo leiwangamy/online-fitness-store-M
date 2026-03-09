@@ -123,7 +123,7 @@
         align-items: center;
         justify-content: center;
         overflow: hidden;
-        padding: 15px;
+        padding: 25px;
         box-sizing: border-box;
         cursor: pointer;
     }
@@ -137,7 +137,7 @@
     }
 
     .product-card-content {
-        padding: 12px 15px;
+        padding: 12px 15px 25px 15px;
     }
 
     .product-card h3 {
@@ -258,18 +258,22 @@
 
 {% block content %}
 <!-- Hero Section -->
-<div class="hero-section">
-    <h1>My Fitness Club</h1>
+<div class="hero-section" {% if company_settings.hero_image %}style="background: linear-gradient(135deg, rgba(45, 106, 79, 0.9) 0%, rgba(27, 67, 50, 0.9) 100%), url('{{ company_settings.hero_image.url }}') center/cover no-repeat;"{% endif %}>
+    <h1>{{ company_settings.hero_title|default:"My Fitness Club" }}</h1>
     <p class="intro-text">
-        Welcome to your journey to better health and fitness.<br>
-        Discover our premium products, expert coaching, and supportive community.
+        {{ company_settings.hero_subtitle|default:"Welcome to your journey to better health and fitness. Discover our premium products, expert coaching, and supportive community."|linebreaks }}
     </p>
+    {% if company_settings.hero_cta_text and company_settings.hero_cta_url %}
+    <div class="hero-buttons">
+        <a href="{% url company_settings.hero_cta_url %}" class="hero-button hero-button-primary">{{ company_settings.hero_cta_text }}</a>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Action Buttons Section -->
 <div class="action-buttons">
     <a href="{% url 'products:list' %}" class="action-button">Browse All Products</a>
-    {% if admin_settings.show_membership_functions %}
+    {% if admin_settings.show_platform_membership %}
     <a href="{% url 'members:membership_plans' %}" class="action-button">View Membership Plans</a>
     {% endif %}
 </div>
@@ -312,6 +316,7 @@
 <!-- Latest Blog Post Section -->
 {% if latest_blog_posts %}
 <div class="featured-section" style="margin-top: 60px;">
+    <h2>Latest Blog</h2>
     {% for post in latest_blog_posts %}
     <div style="background: white; border: 1px solid #ddd; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 60%; margin: 0 auto; transition: transform 0.2s, box-shadow 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)';">
         <a href="{% url 'core:blog_detail' post.slug %}" style="text-decoration: none; color: inherit; display: block;">

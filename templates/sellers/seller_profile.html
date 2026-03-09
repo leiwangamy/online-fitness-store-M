@@ -5,10 +5,35 @@
 
 {% block content %}
 <div class="container" style="max-width: 900px; margin: 30px auto; padding: 20px;">
-    <h1 style="color: #2d6a4f; margin-bottom: 10px;">Seller Profile</h1>
-    <p style="color: #666; margin-bottom: 30px;">Update your seller information and business details.</p>
+    {% if is_read_only %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <strong>🔒 Read-Only Mode:</strong> You are viewing this seller's profile as an administrator. All edit functions are disabled.
+    </div>
+    {% endif %}
+    <h1 style="color: #2d6a4f; margin-bottom: 10px;">Seller Profile{% if is_read_only %} (Read-Only){% endif %}</h1>
+    <p style="color: #666; margin-bottom: 30px;">{% if is_read_only %}View seller information and business details.{% else %}Update your seller information and business details.{% endif %}</p>
     
     <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% if is_read_only %}
+        <div style="margin-top: 20px;">
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Display Name</label>
+                <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;">{{ seller.display_name|default:"N/A" }}</div>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Business Name</label>
+                <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;">{{ seller.business_name|default:"N/A" }}</div>
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">Business Description</label>
+                <div style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; min-height: 100px;">{{ seller.business_description|default:"N/A"|linebreaks }}</div>
+            </div>
+            <div style="margin-top: 30px;">
+                <a href="{% url 'sellers:dashboard' %}?seller_id={{ seller.id }}" class="btn btn-secondary">Back to Dashboard</a>
+                <a href="{% url 'admin:sellers_seller_change' seller.id %}" class="btn btn-secondary" style="background: #6c757d; margin-left: 10px;">← Back to Admin</a>
+            </div>
+        </div>
+        {% else %}
         <form method="post" style="margin-top: 20px;">
             {% csrf_token %}
             
@@ -90,6 +115,7 @@
                 </a>
             </div>
         </form>
+        {% endif %}
     </div>
     
     <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #2d6a4f;">

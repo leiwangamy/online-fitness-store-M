@@ -6,22 +6,14 @@ from django.db import OperationalError, ProgrammingError
 
 
 def contact_page(request):
-    """Display company contact information"""
-    company_info = None
+    """
+    Display company contact information.
     
-    try:
-        from .models import CompanyInfo
-        company_info = CompanyInfo.get_instance()
-    except (OperationalError, ProgrammingError):
-        # Database tables don't exist - show static content only
-        company_info = None
-    except Exception:
-        # Any other database error - show static content
-        company_info = None
-    
-    return render(request, 'core/contact.html', {
-        'company_info': company_info
-    })
+    Now uses CompanySettings (via context processor) instead of CompanyInfo.
+    CompanyInfo is deprecated - all contact info should be managed through
+    Django Admin → Company Settings.
+    """
+    return render(request, 'core/contact.html')
 
 
 def blog_page(request):

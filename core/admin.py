@@ -5,22 +5,39 @@ from .models import CompanyInfo, UserDeletion, BlogPost, BlogPostImage, Membersh
 
 @admin.register(CompanyInfo)
 class CompanyInfoAdmin(admin.ModelAdmin):
-    """Admin interface for editing company contact information"""
+    """
+    DEPRECATED: This model is no longer used.
     
-    list_display = ['phone', 'email', 'updated_at']
+    Please use Company Settings instead:
+    Admin → Company Settings
+    """
+    
+    list_display = ['phone', 'email', 'updated_at', 'deprecation_notice']
     fieldsets = (
-        ('Contact Information', {
-            'fields': ('phone', 'email')
+        ('⚠️ DEPRECATED - Use Company Settings Instead', {
+            'fields': (),
+            'description': '<strong style="color: red;">This model is deprecated. Please use "Company Settings" in the admin sidebar instead.</strong><br><br>'
+                          'All company contact information should now be managed through:<br>'
+                          '<strong>Admin → Company Settings</strong>'
         }),
-        ('Location & Description', {
-            'fields': ('address', 'description')
+        ('Contact Information (Read-Only)', {
+            'fields': ('phone', 'email'),
+            'classes': ('collapse',)
+        }),
+        ('Location & Description (Read-Only)', {
+            'fields': ('address', 'description'),
+            'classes': ('collapse',)
         }),
         ('Metadata', {
             'fields': ('updated_at',),
             'classes': ('collapse',)
         }),
     )
-    readonly_fields = ['updated_at']
+    readonly_fields = ['phone', 'email', 'address', 'description', 'updated_at']
+    
+    def deprecation_notice(self, obj):
+        return format_html('<span style="color: red; font-weight: bold;">⚠️ Use Company Settings</span>')
+    deprecation_notice.short_description = 'Status'
     
     def has_add_permission(self, request):
         # Only allow one instance
@@ -29,6 +46,10 @@ class CompanyInfoAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Don't allow deletion
         return False
+    
+    def has_change_permission(self, request, obj=None):
+        # Make read-only
+        return request.method != 'POST'
 
 
 @admin.register(UserDeletion)

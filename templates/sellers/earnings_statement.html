@@ -257,10 +257,21 @@
         <p class="subtext">View your earnings activity for a selected period</p>
     </div>
     
+    {% if is_read_only %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <strong>🔒 Read-Only Mode:</strong> You are viewing this seller's earnings statement as an administrator. All edit functions are disabled.
+    </div>
+    <a href="{% url 'sellers:dashboard' %}?seller_id={{ seller.id }}" class="btn-secondary">Back to Dashboard</a>
+    <a href="{% url 'admin:sellers_seller_change' seller.id %}" class="btn-secondary" style="background: #6c757d; margin-left: 10px;">← Back to Admin</a>
+    {% else %}
     <a href="{% url 'sellers:dashboard' %}" class="btn-secondary">Back to Dashboard</a>
+    {% endif %}
     
     <div class="date-filter-section">
         <form method="get" id="dateFilterForm">
+            {% if is_read_only %}
+            <input type="hidden" name="seller_id" value="{{ seller.id }}">
+            {% endif %}
             <div class="date-filter-row">
                 <select name="period" id="period" onchange="toggleCustomDates()">
                     <option value="today" {% if period == 'today' %}selected{% endif %}>Today</option>
@@ -304,7 +315,7 @@
                     <td>{{ t.source }}</td>
                     <td>
                         {% if t.type == 'order' %}
-                            <a href="{% url 'sellers:order_detail' t.order_id %}" style="color: #2d6a4f; text-decoration: none;">{{ t.description }}</a>
+                            <a href="{% url 'sellers:order_detail' t.order_id %}{% if is_read_only %}?seller_id={{ seller.id }}{% endif %}" style="color: #2d6a4f; text-decoration: none;">{{ t.description }}</a>
                         {% else %}
                             {{ t.description }}
                         {% endif %}
@@ -416,7 +427,7 @@
     {% endif %}
     
     <div class="export-section">
-        <a href="?period={{ period }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}&export=csv" class="btn-export">Export CSV</a>
+        <a href="?period={{ period }}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if is_read_only %}&seller_id={{ seller.id }}{% endif %}&export=csv" class="btn-export">Export CSV</a>
     </div>
 </div>
 

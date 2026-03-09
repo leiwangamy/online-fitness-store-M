@@ -49,7 +49,7 @@ if not PG_DUMP_PATH:
             break
 
 if not PG_DUMP_PATH:
-    print("❌ Error: pg_dump not found. Please set PG_DUMP_PATH environment variable.")
+    print("[ERROR] pg_dump not found. Please set PG_DUMP_PATH environment variable.")
     print("   Example: set PG_DUMP_PATH=C:\\Program Files\\PostgreSQL\\16\\bin\\pg_dump.exe")
     sys.exit(1)
 
@@ -104,7 +104,7 @@ result = subprocess.run(
 # -------------------------------
 if result.returncode == 0:
     file_size = backup_file.stat().st_size / (1024 * 1024)  # Size in MB
-    print(f"\n✅ Backup completed successfully!")
+    print(f"\n[SUCCESS] Backup completed successfully!")
     print(f"   File: {backup_file}")
     print(f"   Size: {file_size:.2f} MB")
     
@@ -130,7 +130,7 @@ if result.returncode == 0:
     print(f"\nTo restore this backup:")
     print(f"   pg_restore -U {DB_USER} -h {DB_HOST} -p {DB_PORT} -d {DB_NAME} {backup_file}")
 else:
-    print(f"\n❌ Backup failed!")
+    print(f"\n[ERROR] Backup failed!")
     print(f"   Error code: {result.returncode}")
     if result.stderr:
         print(f"\nError output:")

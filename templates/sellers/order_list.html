@@ -134,9 +134,17 @@
 
 {% block content %}
 <div class="order-list-container">
-    <h1>Orders</h1>
+    {% if is_read_only %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin-bottom: 20px; border-radius: 4px;">
+        <strong>🔒 Read-Only Mode:</strong> You are viewing this seller's orders as an administrator. All edit functions are disabled.
+    </div>
+    {% endif %}
+    <h1>{% if is_read_only %}Seller Orders (Read-Only){% else %}Orders{% endif %}</h1>
     
-    <a href="{% url 'sellers:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    <a href="{% url 'sellers:dashboard' %}{% if is_read_only %}?seller_id={{ seller.id }}{% endif %}" class="btn btn-secondary">Back to Dashboard</a>
+    {% if is_read_only %}
+        <a href="{% url 'admin:sellers_seller_change' seller.id %}" class="btn btn-secondary" style="background: #6c757d; margin-left: 10px;">← Back to Admin</a>
+    {% endif %}
     
     <div class="filter-section">
         <form method="get" style="display: inline-block;">
@@ -210,7 +218,7 @@
                     </table>
                 </div>
                 
-                <a href="{% url 'sellers:order_detail' order.id %}" class="btn btn-primary">View Details & Update Status</a>
+                <a href="{% url 'sellers:order_detail' order.id %}{% if is_read_only %}?seller_id={{ seller.id }}{% endif %}" class="btn btn-primary">{% if is_read_only %}View Details{% else %}View Details & Update Status{% endif %}</a>
             </div>
         {% endfor %}
         

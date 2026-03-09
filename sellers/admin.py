@@ -46,7 +46,13 @@ class SellerAdmin(admin.ModelAdmin):
     
     def user_email(self, obj):
         """Display user email in list view"""
-        return obj.user.email if obj.user.email else obj.user.username
+        email = obj.user.email if obj.user.email else obj.user.username
+        return format_html(
+            '{} <a href="{}?seller_id={}" style="margin-left: 10px; color: #2d6a4f; text-decoration: none;" title="View Seller Dashboard">📊 View Dashboard</a>',
+            email,
+            reverse('sellers:dashboard'),
+            obj.id
+        )
     user_email.short_description = 'Email'
     user_email.admin_order_field = 'user__email'
     

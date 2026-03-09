@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from urllib.parse import quote
 
@@ -7,6 +8,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .models import DigitalDownload
+
+logger = logging.getLogger(__name__)
 
 
 def send_order_confirmation_email(request, order):
@@ -51,9 +54,6 @@ def send_order_confirmation_email(request, order):
             fail_silently=False,
         )
     except Exception as e:
-        # Log error but don't fail the order creation
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Failed to send order confirmation email for order #{order.id}: {e}")
 
 
@@ -133,7 +133,105 @@ def create_downloads_and_email(request, order, days_valid=7, max_downloads=0):
             fail_silently=False,
         )
     except Exception as e:
-        # Log error but don't fail the order creation
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error(f"Failed to send digital download email for order #{order.id}: {e}")
+
+
+def send_new_order_alert_emails(request, order):
+    """
+    Send "new order / product sold" alerts to:
+    - Company (Support email from Company Settings)
+    - Each seller whose products are in the order (seller's user email)
+    Call only after payment is confirmed.
+    """
+    items_manager = getattr(order, "items", None)
+    items = list(
+        (items_manager.all() if items_manager else order.orderitem_set.all()).select_related(
+            "seller", "seller__user", "product"
+        )
+    )
+    if not items:
+        return
+
+    customer_email = getattr(getattr(order, "user", None), "email", None) or "Guest"
+    order_total = getattr(order, "total", None)
+    order_total_str = f"${float(order_total):.2f}" if order_total is not None else "N/A"
+
+    # Build full order summary (for company and for per-seller messages)
+    lines = []
+    for item in items:
+        product_name = getattr(item.product, "name", "Product")
+        qty = getattr(item, "quantity", 0)
+        price = getattr(item, "price", None) or getattr(item, "line_total", None)
+        price_str = f"${float(price):.2f}" if price is not None else "N/A"
+        seller_name = "—"
+        if getattr(item, "seller", None):
+            s = item.seller
+            seller_name = getattr(s, "display_name", None) or getattr(getattr(s, "user", None), "email", None) or "Seller"
+        lines.append(f"  • {product_name} x{qty} @ {price_str} (seller: {seller_name})")
+    order_summary = "\n".join(lines)
+
+    default_from = getattr(settings, "DEFAULT_FROM_EMAIL", "noreply@example.com")
+
+    # 1) Company alert (Support email from Company Settings)
+    try:
+        from company_settings.models import CompanySettings
+        company = CompanySettings.get_settings()
+        support_email = getattr(company, "support_email", None) or getattr(company, "email", None)
+        support_email = (support_email or "").strip()
+        if support_email:
+            subject = f"[New Order] Order #{order.id} – {order_total_str}"
+            message = (
+                f"A new order has been placed.\n\n"
+                f"Order #: {order.id}\n"
+                f"Total: {order_total_str}\n"
+                f"Customer: {customer_email}\n\n"
+                f"Items:\n{order_summary}\n"
+            )
+            send_mail(
+                subject,
+                message,
+                default_from,
+                [support_email],
+                fail_silently=True,
+            )
+    except Exception as e:
+        logger.warning("Could not send new-order alert to company: %s", e)
+
+    # 2) Per-seller alerts (each seller gets only their items)
+    seen_seller_ids = set()
+    for item in items:
+        seller = getattr(item, "seller", None)
+        if not seller or (seller.id in seen_seller_ids):
+            continue
+        seen_seller_ids.add(seller.id)
+        to_email = getattr(getattr(seller, "user", None), "email", None)
+        if not to_email:
+            continue
+        seller_items = [i for i in items if getattr(i, "seller", None) and i.seller.id == seller.id]
+        seller_lines = []
+        seller_earnings_total = 0
+        for i in seller_items:
+            name = getattr(i.product, "name", "Product")
+            qty = getattr(i, "quantity", 0)
+            price = getattr(i, "price", None) or getattr(i, "line_total", None)
+            price_str = f"${float(price):.2f}" if price is not None else "N/A"
+            seller_lines.append(f"  • {name} x{qty} @ {price_str}")
+            seller_earnings_total += float(getattr(i, "seller_earnings", 0) or 0)
+        seller_summary = "\n".join(seller_lines)
+        subject = f"[New Sale] Order #{order.id} – your items"
+        message = (
+            f"You have a new sale!\n\n"
+            f"Order #: {order.id}\n"
+            f"Your items:\n{seller_summary}\n\n"
+            f"Your earnings for this order: ${seller_earnings_total:.2f}\n"
+        )
+        try:
+            send_mail(
+                subject,
+                message,
+                default_from,
+                [to_email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            logger.warning("Could not send new-order alert to seller %s: %s", seller.id, e)

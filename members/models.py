@@ -31,21 +31,20 @@ class MemberProfile(models.Model):
     last_billed_date = models.DateField(blank=True, null=True)
 
     def __str__(self):
-        level_display = self.get_membership_level_display()
-        if level_display == self.membership_level:
-            # If display is same as value, it means it's not in choices (likely a seller plan)
-            # Try to get a better display name
-            if self.membership_level.startswith("seller_"):
-                try:
-                    from sellers.models import SellerMembershipPlan
-                    parts = self.membership_level.split('_', 2)
-                    if len(parts) == 3:
-                        seller_id = parts[1]
-                        slug = parts[2]
-                        plan = SellerMembershipPlan.objects.get(seller_id=seller_id, slug=slug)
-                        level_display = f"{plan.seller.display_name or plan.seller.user.username} - {plan.name}"
-                except Exception:
-                    pass
+        # membership_level is a free-form CharField (no choices), so use MEMBERSHIP_LEVEL_CHOICES for legacy values only
+        level_val = self.membership_level or "none"
+        level_display = dict(self.MEMBERSHIP_LEVEL_CHOICES).get(level_val, level_val)
+        if level_val.startswith("seller_"):
+            try:
+                from sellers.models import SellerMembershipPlan
+                parts = level_val.split('_', 2)
+                if len(parts) == 3:
+                    seller_id = parts[1]
+                    slug = parts[2]
+                    plan = SellerMembershipPlan.objects.get(seller_id=seller_id, slug=slug)
+                    level_display = f"{plan.seller.display_name or plan.seller.user.username} - {plan.name}"
+            except Exception:
+                pass
         return f"{self.user} – {level_display}"
 
     @property
