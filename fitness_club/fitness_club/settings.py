@@ -139,6 +139,7 @@ MIDDLEWARE = [
 
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "core.middleware.log_500_traceback_middleware",  # Log traceback for 500s (see console)
 ]
 
 # ------------------------------------------------------------

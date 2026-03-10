@@ -4,7 +4,7 @@
 {% block branding %}
   <div class="admin-nav-links">
     <a href="{% url 'home:home' %}">Home</a>
-    {% if admin_settings.show_platform_membership %}
+    {% if admin_settings.show_platform_membership|default:True %}
     <a href="{% url 'members:my_membership' %}">Membership</a>
     {% endif %}
     <a href="{% url 'cart:cart_detail' %}">Cart</a>
@@ -15,9 +15,9 @@
       {% if user.is_authenticated %}
         👤 You are logged in as <strong>{{ user.username }}</strong>
       {% endif %}
-      {% if user.is_staff and has_pending_refunds %}
+      {% if user.is_staff and has_pending_refunds|default:False %}
         <span style="margin-left: 20px; background: #ffc107; color: #856404; padding: 5px 10px; border-radius: 4px; font-weight: bold;">
-          ⚠ Refund Requests ({{ pending_refunds_count }})
+          ⚠ Refund Requests ({{ pending_refunds_count|default:0 }})
         </span>
         <a href="{% url 'admin:orders_refund_changelist' %}?status__exact=requested" style="margin-left: 10px; color: #856404; text-decoration: underline;">
           → Review
@@ -28,14 +28,14 @@
     <div class="admin-control-buttons" style="margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
       <form method="post" action="{% url 'admin_toggle_platform_membership' %}" style="margin: 0;">
         {% csrf_token %}
-        <button type="submit" class="admin-control-btn" style="background: {% if admin_settings.show_platform_membership %}#28a745{% else %}#6c757d{% endif %}; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
-          {% if admin_settings.show_platform_membership %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %} Platform Membership
+        <button type="submit" class="admin-control-btn" style="background: {% if admin_settings.show_platform_membership|default:True %}#28a745{% else %}#6c757d{% endif %}; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+          {% if admin_settings.show_platform_membership|default:True %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %} Platform Membership
         </button>
       </form>
       <form method="post" action="{% url 'admin_toggle_seller_membership' %}" style="margin: 0;">
         {% csrf_token %}
-        <button type="submit" class="admin-control-btn" style="background: {% if admin_settings.show_seller_membership %}#28a745{% else %}#6c757d{% endif %}; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
-          {% if admin_settings.show_seller_membership %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %} Seller Membership
+        <button type="submit" class="admin-control-btn" style="background: {% if admin_settings.show_seller_membership|default:True %}#28a745{% else %}#6c757d{% endif %}; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;">
+          {% if admin_settings.show_seller_membership|default:True %}👁️ Hide{% else %}👁️‍🗨️ Show{% endif %} Seller Membership
         </button>
       </form>
       <a href="{% url 'admin_backup_database' %}" class="admin-control-btn" style="background: #007bff; color: white; text-decoration: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; font-size: 14px; display: inline-block;">
@@ -47,9 +47,9 @@
 {% endblock %}
 
 {% block content %}
-  {% if user.is_staff and has_pending_refunds %}
+  {% if user.is_staff and has_pending_refunds|default:False %}
     <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; margin: 10px 0; border-radius: 4px;">
-      <strong style="color: #856404;">⚠ You have {{ pending_refunds_count }} pending refund request{{ pending_refunds_count|pluralize }}.</strong>
+      <strong style="color: #856404;">⚠ You have {{ pending_refunds_count|default:0 }} pending refund request{{ pending_refunds_count|default:0|pluralize }}.</strong>
       <a href="{% url 'admin:orders_refund_changelist' %}?status__exact=requested" style="margin-left: 10px; color: #856404; text-decoration: underline; font-weight: bold;">
         → Review Refund Requests
       </a>

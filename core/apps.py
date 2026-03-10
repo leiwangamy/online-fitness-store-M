@@ -1,5 +1,4 @@
 # core/apps.py
-import os
 from django.apps import AppConfig
 
 
@@ -8,17 +7,8 @@ class CoreConfig(AppConfig):
     name = "core"
 
     def ready(self):
-        # Ensure Site with SITE_ID=1 exists (avoids 500 on admin/login when Django/allauth resolve current site)
-        try:
-            from django.contrib.sites.models import Site
-            domain = (os.environ.get("SITE_DOMAIN") or "store.lwsoc.com").strip() or "store.lwsoc.com"
-            name = (os.environ.get("SITE_NAME") or domain).strip() or domain
-            site, created = Site.objects.get_or_create(pk=1, defaults={"domain": domain, "name": name})
-            site.domain = domain
-            site.name = name
-            site.save(update_fields=["domain", "name"])
-        except Exception:
-            pass
+        # Site id=1 is ensured on first request by core.middleware.ensure_site_middleware
+        # (no DB access here to avoid "database during app initialization" warning)
 
         # Attach the CSV action to all registered ModelAdmins
         from django.contrib import admin
