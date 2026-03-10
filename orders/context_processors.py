@@ -11,14 +11,13 @@ def staff_notifications(request):
     Shows pending refund requests count.
     """
     context = {
-        'pending_refunds_count': 0,
-        'has_pending_refunds': False,
+        "pending_refunds_count": 0,
+        "has_pending_refunds": False,
     }
-    
-    # Only for staff users
+    if request.path.startswith("/admin"):
+        return context
     if not request.user.is_authenticated or not request.user.is_staff:
         return context
-    
     try:
         from .models import Refund
         pending_count = Refund.objects.filter(status=Refund.STATUS_REQUESTED).count()

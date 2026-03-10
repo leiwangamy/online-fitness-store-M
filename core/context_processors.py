@@ -4,8 +4,18 @@ Context processors for core app
 from .models import AdminSettings
 
 
+def _default_admin_settings():
+    class DefaultAdminSettings:
+        show_membership_functions = True
+        show_platform_membership = True
+        show_seller_membership = True
+    return DefaultAdminSettings()
+
+
 def admin_settings(request):
     """Add admin settings to template context for all users (needed to hide/show membership links)"""
+    if request.path.startswith("/admin"):
+        return {"admin_settings": _default_admin_settings()}
     try:
         admin_settings = AdminSettings.get_instance()
         # Ensure new fields exist (for migration compatibility)
@@ -17,18 +27,19 @@ def admin_settings(request):
             'admin_settings': admin_settings,
         }
     except Exception:
-        # If AdminSettings doesn't exist yet (before migration), return defaults
-        class DefaultAdminSettings:
-            show_membership_functions = True
-            show_platform_membership = True
-            show_seller_membership = True
-        return {
-            'admin_settings': DefaultAdminSettings(),
-        }
+        return {"admin_settings": _default_admin_settings()}
 
 
 def membership_availability(request):
     """Check if admin and seller membership plans are available"""
+    if request.path.startswith("/admin"):
+        return {
+            "has_admin_membership": False,
+            "has_platform_membership": False,
+            "has_seller_membership": False,
+            "has_both_memberships": False,
+            "seller_plans": [],
+        }
     has_admin_plans = False
     has_seller_plans = False
     seller_plans = []

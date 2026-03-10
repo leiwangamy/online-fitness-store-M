@@ -1,10 +1,11 @@
 def cart_context(request):
     """Add cart count to template context"""
     from django.db import OperationalError, ProgrammingError
-    
+
+    if request.path.startswith("/admin"):
+        return {"cart_item_count": 0}
     context = {}
     cart_count = 0
-    
     try:
         from .models import CartItem
         

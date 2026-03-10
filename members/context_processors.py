@@ -4,15 +4,16 @@ from django.db import OperationalError, ProgrammingError
 def membership_context(request):
     """Add user's membership information to template context"""
     context = {
-        'user_membership': None,
-        'user_platform_memberships': [],
-        'user_seller_memberships': [],
-        'user_membership_status': "None",
-        'user_seller_membership_status': "None",
-        'has_platform_membership': False,
-        'has_seller_membership': False,
+        "user_membership": None,
+        "user_platform_memberships": [],
+        "user_seller_memberships": [],
+        "user_membership_status": "None",
+        "user_seller_membership_status": "None",
+        "has_platform_membership": False,
+        "has_seller_membership": False,
     }
-    
+    if request.path.startswith("/admin"):
+        return context
     try:
         from .models import MemberProfile, MembershipPlan, UserMembership
         
