@@ -21,8 +21,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         user = super().save_user(request, user, form, commit=False)
         
         # If username is not required, set it to email for consistency
-        # Do this AFTER parent saves password, but BEFORE we save
-        if not user.username or user.username != user.email:
+        # Do this AFTER parent saves password, but BEFORE we save (only if email is set)
+        if getattr(user, "email", None) and (not user.username or user.username != user.email):
             user.username = user.email
         
         if commit:
