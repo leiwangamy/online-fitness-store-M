@@ -222,8 +222,8 @@ LOGIN_URL = "/accounts/login/"
 # Email
 # ------------------------------------------------------------
 # From-address for outgoing email. If not set in .env, Company Settings (Support email)
-# is used at startup via company_settings.apps — so you can set it once in Admin.
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "")
+# is used at startup via company_settings.apps. Fallback so it is never empty.
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL") or "Fitness Store <noreply@example.com>"
 
 # Email verification settings
 # "mandatory" = email verification required for new signups

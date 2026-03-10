@@ -20,5 +20,3 @@ class CompanySettingsConfig(AppConfig):
                 django_settings.EMAIL_HOST_USER = support_email
         except Exception:
             pass
-        if not getattr(django_settings, "DEFAULT_FROM_EMAIL", None):
-            django_settings.DEFAULT_FROM_EMAIL = "Fitness Store <noreply@example.com>"
