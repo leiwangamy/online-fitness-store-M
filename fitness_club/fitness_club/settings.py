@@ -230,6 +230,8 @@ DEFAULT_FROM_EMAIL = os.environ.get(
 # "mandatory" = email verification required for new signups
 # We override is_email_verified() in adapter to allow login without verification for existing users
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
+# Links in emails (e.g. verification, password reset) use this protocol
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 # When email verification is mandatory, users are NOT auto-logged in after signup
 # They must verify their email first, then they'll be logged in after confirmation
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login AFTER email confirmation
