@@ -4,8 +4,8 @@ services:
     container_name: fitness_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-fitness_club_db}
-      POSTGRES_USER: ${POSTGRES_USER:-fitness_user}
+      POSTGRES_DB: ${POSTGRES_DB:-fitness_m_user}
+      POSTGRES_USER: ${POSTGRES_USER:-fitness_m}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-Fitness123!}
     volumes:
       - postgres_data:/var/lib/postgresql/data
