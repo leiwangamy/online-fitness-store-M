@@ -26,12 +26,17 @@ ALLOWED_HOSTS=15.223.56.68,ec2-15-223-56-68.ca-central-1.compute.amazonaws.com,l
 # CSRF Trusted Origins (comma-separated, include https:// if you have SSL)
 # CSRF_TRUSTED_ORIGINS=https://ec2-15-223-56-68.ca-central-1.compute.amazonaws.com
 
-# Database Configuration (for Docker)
-POSTGRES_DB=fitness_club_db
-POSTGRES_USER=fitness_user
-POSTGRES_PASSWORD=your-database-password
+# Database: DB_NAME = database name, DB_USER = login user (must match Docker compose)
+DB_NAME=fitness_m_db
+DB_USER=fitness_m_user
+DB_PASSWORD=your-database-password
 DB_HOST=db
-POSTGRES_PORT=5432
+DB_PORT=5432
+
+# Docker Compose uses these to create the DB (same values)
+POSTGRES_DB=fitness_m_db
+POSTGRES_USER=fitness_m_user
+POSTGRES_PASSWORD=your-database-password
 
 # Email Verification
 # "mandatory" = new signups must verify email, but existing users can log in

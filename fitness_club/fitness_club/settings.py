@@ -18,7 +18,7 @@ Environment Variables:
 - DJANGO_DEBUG: Debug mode (1 for dev, 0 for production)
 - ALLOWED_HOSTS: Comma-separated list of allowed hostnames
 - CSRF_TRUSTED_ORIGINS: Comma-separated list of trusted origins
-- Database credentials: POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD, DB_HOST, POSTGRES_PORT
+- Database: DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT (or POSTGRES_* for Docker compatibility)
 
 Production Considerations:
 - Set DEBUG=False
@@ -177,17 +177,16 @@ TEMPLATES = [
 # ------------------------------------------------------------
 # Database
 # ------------------------------------------------------------
-# PostgreSQL Database Configuration
-# This points to the fitness_m_user database (the new database)
-# The .env file should have: POSTGRES_DB=fitness_m_user, POSTGRES_USER=fitness_m
+# PostgreSQL: DB_NAME = database name, DB_USER = login user (Docker uses POSTGRES_DB, POSTGRES_USER).
+# .env example: DB_NAME=fitness_m_db, DB_USER=fitness_m_user, DB_PASSWORD=..., DB_HOST=db, DB_PORT=5432
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "fitness_m_user"),
-        "USER": os.environ.get("POSTGRES_USER", "fitness_m"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", ""),
+        "NAME": os.environ.get("DB_NAME") or os.environ.get("POSTGRES_DB", "fitness_m_db"),
+        "USER": os.environ.get("DB_USER") or os.environ.get("POSTGRES_USER", "fitness_m_user"),
+        "PASSWORD": os.environ.get("DB_PASSWORD") or os.environ.get("POSTGRES_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+        "PORT": os.environ.get("DB_PORT") or os.environ.get("POSTGRES_PORT", "5432"),
         "CONN_MAX_AGE": 0,  # Force connections to close immediately (no persistent connections)
     }
 }
