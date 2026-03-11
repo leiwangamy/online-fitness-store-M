@@ -49,6 +49,7 @@ nano .env
 - `DJANGO_DEBUG=0` (should already be set)
 - `ALLOWED_HOSTS=ec2-15-223-56-68.ca-central-1.compute.amazonaws.com`
 - `POSTGRES_PASSWORD` - Set a strong password
+- **`ACCOUNT_EMAIL_VERIFICATION=mandatory`** – For production: require email verification before login. (Default in code is `optional` for local/dev; set in .env when deploying online to activate verification.)
 
 ### Step 6: Build and Start Containers
 ```bash

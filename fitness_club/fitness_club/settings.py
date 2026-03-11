@@ -227,13 +227,11 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     "Fitness Club <no-reply@lwsoc.com>"
 )
 
-# Email verification settings
-# "mandatory" = email verification required for new signups
-# We override is_email_verified() in adapter to allow login without verification for existing users
-ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
-# When email verification is mandatory, users are NOT auto-logged in after signup
-# They must verify their email first, then they'll be logged in after confirmation
-ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login AFTER email confirmation
+# Email verification: default "optional" (no verification). When deploying online, set in .env:
+#   ACCOUNT_EMAIL_VERIFICATION=mandatory
+# to require verification before login. See ec2.env.example and docs/deployment/QUICK_DEPLOY.md.
+ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "optional")
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # If verification is used, auto-login after confirm
 ACCOUNT_AUTHENTICATED_LOGIN_REDIRECTS = True  # Redirect authenticated users
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "/"  # Redirect to home after email confirmation
 ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL = "/"  # Redirect to home if already logged in

@@ -272,6 +272,7 @@ Key environment variables (set in `.env` file):
 - `POSTGRES_PASSWORD`: Database password
 - `DB_HOST`: Database host (use `db` for Docker, `localhost` for local)
 - `POSTGRES_PORT`: Database port (default: 5432)
+- `ACCOUNT_EMAIL_VERIFICATION`: For **production**, set to `mandatory` in `.env` to require email verification before login (see `ec2.env.example`).
 
 ### Django Settings
 
