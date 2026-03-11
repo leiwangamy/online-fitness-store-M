@@ -220,18 +220,17 @@ LOGOUT_REDIRECT_URL = "/"
 LOGIN_URL = "/accounts/login/"
 
 # ------------------------------------------------------------
-# Email
+# Email (same as P for consistent email verification workflow)
 # ------------------------------------------------------------
-# From-address for outgoing email. If not set in .env, Company Settings (Support email)
-# is used at startup via company_settings.apps. Fallback so it is never empty.
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL") or "Fitness Store <info@lwsoc.com>"
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "DEFAULT_FROM_EMAIL",
+    "Fitness Club <no-reply@lwsoc.com>"
+)
 
 # Email verification settings
 # "mandatory" = email verification required for new signups
 # We override is_email_verified() in adapter to allow login without verification for existing users
 ACCOUNT_EMAIL_VERIFICATION = os.environ.get("ACCOUNT_EMAIL_VERIFICATION", "mandatory")
-# Links in emails (e.g. verification, password reset) use this protocol
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
 # When email verification is mandatory, users are NOT auto-logged in after signup
 # They must verify their email first, then they'll be logged in after confirmation
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login AFTER email confirmation
@@ -250,26 +249,18 @@ elif DEBUG:
     # Dev: print emails to console (you'll see the verification link in logs)
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 else:
-    # Production: use SMTP only if EMAIL_HOST is set; otherwise console to avoid 500 on signup
-    _email_host = os.environ.get("EMAIL_HOST", "").strip()
-    if _email_host:
-        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-        EMAIL_HOST = _email_host
-        EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
-        EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
-        EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() == "true"
-        EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
-        EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-        EMAIL_TIMEOUT = 10
-        if EMAIL_USE_TLS and EMAIL_USE_SSL:
-            raise ValueError("Only one of EMAIL_USE_TLS or EMAIL_USE_SSL can be True.")
-    else:
-        # No SMTP configured: use console so signup/verification don't 500 (check logs for links)
-        import logging
-        logging.getLogger(__name__).warning(
-            "EMAIL_HOST not set in production: using console backend. Set EMAIL_HOST (and EMAIL_HOST_USER/EMAIL_HOST_PASSWORD) in .env to send real emails."
-        )
-        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+    EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+    EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+    EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True").lower() == "true"
+    EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False").lower() == "true"
+    EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+    EMAIL_TIMEOUT = 10  # Timeout in seconds for SMTP connection
+
+    if EMAIL_USE_TLS and EMAIL_USE_SSL:
+        raise ValueError("Only one of EMAIL_USE_TLS or EMAIL_USE_SSL can be True.")
 
 
 

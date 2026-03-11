@@ -3,6 +3,20 @@
 ## Overview
 This guide will help you enable email verification for new user signups using your Google Workspace email (`info@lwsoc.com`).
 
+## Verification web pages (same as project P)
+
+These special pages are used in the email verification flow:
+
+| Page | URL | Template | Purpose |
+|------|-----|----------|---------|
+| Sign up | `/accounts/signup/` | `account/signup.html` | Create account; then user is sent to "Verify Your Email Address". |
+| Verify your email (after signup) | Shown after signup | `account/email_verification_sent.html` | "We have sent an email to you for verification" + **Sign In** link. |
+| Confirm email (link in email) | `/accounts/confirm-email/<key>/` | `account/email_confirm.html` | User clicks link → confirm → then redirected (auto-login if same session). |
+| Member login | `/accounts/login/` | `account/login.html` | Log in after verification or with existing account. |
+
+- **Base template**: Toasts for "You have confirmed" (and sign-in/sign-out) are hidden in `base.html` so the verification flow stays clean.
+- **Debug only**: `/accounts/test-email-confirm/` shows a preview of the confirm-email page (when `DEBUG=True`).
+
 ## Step 1: Update `.env` file on EC2
 
 SSH into your EC2 instance and edit the `.env` file:

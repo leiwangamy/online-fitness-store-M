@@ -41,7 +41,6 @@ urlpatterns = [
 
     # Include accounts app first so it can override allauth URLs (accessed with namespace "accounts")
     # Then include allauth for login/signup etc. (accessed without namespace as 'account_login', 'account_signup')
-    # Django processes URLs in order, so accounts URLs are checked first for matches
     path("accounts/", include(("accounts.urls", "accounts"), namespace="accounts")),
     path("accounts/", include("allauth.urls")),
 

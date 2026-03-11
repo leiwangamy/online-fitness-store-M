@@ -2,12 +2,8 @@
 Custom allauth adapter to ensure usernames are set to email
 when using email-only authentication.
 """
-import logging
-
 from allauth.account.adapter import DefaultAccountAdapter
 from core.models import UserDeletion
-
-logger = logging.getLogger(__name__)
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
@@ -24,9 +20,9 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         # Call parent first - this sets the password correctly
         user = super().save_user(request, user, form, commit=False)
         
-        # If username is not required, set it to email for consistency
-        # Do this AFTER parent saves password, but BEFORE we save (only if email is set)
-        if getattr(user, "email", None) and (not user.username or user.username != user.email):
+        # If username is not required, set it to email for consistency (align with P workflow)
+        # Do this AFTER parent saves password, but BEFORE we save
+        if not user.username or user.username != user.email:
             user.username = user.email
         
         if commit:
@@ -57,22 +53,6 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         # Allow normal signup
         return True
-
-    def send_mail(self, template_prefix, email, context):
-        """
-        Send mail but do not 500 if SMTP fails (e.g. wrong credentials, network).
-        User still gets account created; they can use password reset or contact support.
-        """
-        try:
-            super().send_mail(template_prefix, email, context)
-        except Exception as e:
-            logger.exception(
-                "Failed to send account email (template_prefix=%s, to=%s): %s",
-                template_prefix,
-                email,
-                e,
-            )
-            # Do not re-raise: allow signup to complete so we don't return 500
 
     def is_email_verified(self, request, email):
         """
